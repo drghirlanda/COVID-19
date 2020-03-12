@@ -1,0 +1,8 @@
+sat <- function(t,x) { 
+    n.free <- 2^t
+    n.sat <- x*( t*2^t - 1 )
+    n <- n.free - n.sat
+    n[ n>1 ]
+}
+
+plot( 
