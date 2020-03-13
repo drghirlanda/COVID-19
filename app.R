@@ -8,7 +8,7 @@ deaths <- load.covid( "Deaths" )
 confirmed <- load.covid( "Confirmed" )
 
 ui <- fluidPage(
-    titlePanel( "COVID-19: Data and Models" ),
+    titlePanel( HTML("COVID-19: Understanding Trends - Instructions are <a target=\"_blank\" href=\"https://dataworks.consulting/covid-19\">here</a>") ),
     sidebarLayout(
         sidebarPanel(
             selectInput(
@@ -287,7 +287,8 @@ server <- function( input, output, session ) {
     output$info <- renderUI({
         tagList(
             tags$p( HTML("This tool is provided by <a href=\"https://dataworks.consulting\">DataWorks LLC</a> as is, without any implied fitness for any purpose. It may provide inaccurate information. DataWorks LLC and its representatives are not liable for any damage that may derive from the use of this tool.") ),
-            tags$p( HTML("Data courtesy of <a href=\"https://systems.jhu.edu/research/public-health/ncov/\">Johns Hopkins Center for Systems Science and Engineering</a>. Retrieved from the <a href=\"https://github.com/CSSEGISandData/COVID-19\">COVID-19 github.com repository</a>. &copy; DataWorks LLC 2020") )
+            tags$p( HTML("Data courtesy of <a href=\"https://systems.jhu.edu/research/public-health/ncov/\">Johns Hopkins Center for Systems Science and Engineering</a>. Retrieved from the <a href=\"https://github.com/CSSEGISandData/COVID-19\">COVID-19 github.com repository</a>.") ),
+            tags$p( HTML("&copy;&nbsp;DataWorks LLC 2020") )
         )
     })
     
