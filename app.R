@@ -41,11 +41,12 @@ ui <- fluidPage(
             ),
             actionButton(
                 inputId="buttonModel",
-                label="Add Model"
+                label="Add Data and Model"
             ),
+            p(),
             actionButton(
                 inputId="buttonClear",
-                label="Clear"
+                label="Clear All"
             ),
             actionButton(
                 inputId="buttonClearPoints",
@@ -57,10 +58,13 @@ ui <- fluidPage(
                 label="Vertical Scale",
                 choices=c("Linear","Logarithmic"),
                 selected="Logarithmic"
-            )
+            ),
+            width=3
         ),
         mainPanel(
-            plotOutput( outputId="plot", click="plot_click" )
+            plotOutput( outputId="plot", click="plot_click" ),
+            uiOutput( outputId="info" ),
+            width=9
         )
     )
 )
@@ -208,7 +212,7 @@ server <- function( input, output, session ) {
             NA,
             xlab = "Day",
             ylab = "Count",
-            xlim = c( min(first.days), max(last.days) ),
+            xlim = c( min(first.days)-2, max(last.days)+2 ),
             ylim = c( 1, yMax ),
             log  = logScale
         )
@@ -266,15 +270,25 @@ server <- function( input, output, session ) {
             text(
                 p$x,
                 p$y,
-                labels=paste(
-                    as.Date(p$x),
-                    format(p$y, digits=2),
-                    sep=", "
-                ),
+                labels=as.Date(p$x),
+                pos=1,
+                xpd=TRUE
+            )
+            text(
+                p$x,
+                p$y,
+                labels=format(p$y, digits=2),
                 pos=3,
                 xpd=TRUE
             )
         }
+    })
+
+    output$info <- renderUI({
+        tagList(
+            tags$p( HTML("This tool is provided by <a href=\"https://dataworks.consulting\">DataWorks LLC</a> as is, without any implied fitness for any purpose. It may provide inaccurate information. DataWorks LLC and its representatives are not liable for any damage that may derive from the use of this tool.") ),
+            tags$p( HTML("Data courtesy of <a href=\"https://systems.jhu.edu/research/public-health/ncov/\">Johns Hopkins Center for Systems Science and Engineering</a>. Retrieved from the <a href=\"https://github.com/CSSEGISandData/COVID-19\">COVID-19 github.com repository</a>. &copy; DataWorks LLC 2020") )
+        )
     })
     
 }

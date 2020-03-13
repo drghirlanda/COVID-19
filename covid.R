@@ -1,3 +1,5 @@
+data(state)
+
 load.covid <- function( file ) {
     ## read raw data file
     file <- paste0(
@@ -16,6 +18,9 @@ load.covid <- function( file ) {
         c("Subregion","Region")
     )
 
+    ## there is extra whitespace in some cases
+    dt[, Subregion := trimws( Subregion ) ]
+
     ## transform to long form
     dt <- melt( dt, id.vars=c("Subregion","Region","Lat","Long") )
     setnames( dt, c("variable","value"), c("Day","Count") )
@@ -23,42 +28,63 @@ load.covid <- function( file ) {
     ## make sure Day is a date
     dt$Day <- as.Date( dt$Day, format="%m/%d/%y" )
 
-    ## create New York City subregion
-    nyc.counties <- c(
-        "New York County, NY",
-        "Kings County, NY",
-        "Queens County, NY",
-        "Richmond County, NY",
-        "Bronx County, NY"
-    )
-    nyc.dt <- dt[
-        Subregion %in% nyc.counties,
-        .(
-            "New York City",
-            "US",
-            mean(Lat),
-            mean(Long),
-            sum(Count,na.rm=TRUE)
-        ),
-        by=Day
-    ]
-
-    setnames(
-        nyc.dt,
-        c("V1","V2","V3","V4","V5"),
-        c("Subregion","Region","Lat","Long","Count")
-    )
-    dt <- rbind( dt, nyc.dt )
+    ## remove empty lines
+    dt <- dt[ Count>0 ]
     
-    ## remove county-level data
-    dt <- dt[ ! grep("County", Subregion) ]
-    dt <- dt[ ! grep("Parish", Subregion) ]
+    ## The US data set has some inconsistencies and includes entries
+    ## for both parts of states (counties, parishes) and for whole
+    ## states. The former usually start earlier. Here we aggregate the
+    ## data.
 
+    us <- NULL
+    for( s in state.abb ) {
+        ## aggregate local data in this state 
+        dt.s1 <- dt[ Region=="US" ][
+            grep( paste0(", ", s, "$"), Subregion ),
+            .(
+                Region,
+                rep( state.name[ state.abb==s ], .N ),
+                mean( Lat ),
+                mean( Long ),
+                sum( Count, na.rm=TRUE )
+            ),
+            by=Day
+        ]
+        setnames(
+            dt.s1,
+            c("V2","V3","V4","V5"),
+            c("Subregion","Lat","Long","Count")
+        )
+        ## get state data
+        dt.s2 <- dt[ Region=="US" & Subregion==state.name[ state.abb==s ] ]
+        ## merge and average
+        dt.s <- rbind( dt.s1, dt.s2 )
+        dt.s <- dt.s[,
+                     .(
+                         mean(Lat),
+                         mean(Long),
+                         mean(Count, na.rm=TRUE)
+                     ),
+                     by=.(Day,Region,Subregion)
+                     ]
+        setnames(
+            dt.s,
+            c("V1","V2","V3"),
+            c("Lat","Long","Count")
+        )
+        ## delete old data
+        us <- rbind( us, dt.s )
+    }
+    ## remove old US data and add new
+    dt <- dt[ Region != "US" ]
+    dt <- rbind( dt, us )
+    
+    ## an empty subregion means the total
     dt[ Subregion=="", Subregion := "All" ]
 
     ## add All subregion if not present
     for( r in unique(dt$Region) ) {
-        if( sum( dt[Region==r,Subregion=="All"] == 0 ) ) {
+        if( ! "All" %in% dt[Region==r,Subregion] ) {
             all.dt <- dt[
                 Region==r,
                 .(
@@ -79,6 +105,7 @@ load.covid <- function( file ) {
         }
     }
 
+    ## add total counts by region and subregion, for sorting
     dt[, RegionTotal := sum(Count,na.rm=TRUE), by=Region ]
     dt[, SubregionTotal := sum(Count,na.rm=TRUE), by=.(Region,Subregion) ]
     
