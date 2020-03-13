@@ -11,6 +11,7 @@ ui <- fluidPage(
     titlePanel( HTML("COVID-19: Understanding Trends - Instructions are <a target=\"_blank\" href=\"https://dataworks.consulting/covid-19\">here</a>") ),
     sidebarLayout(
         sidebarPanel(
+            radioButtons( inputId="radioWhat", label=NULL, choices=c("Cases","Fatalities"), selected="Cases", inline=TRUE ),
             selectInput(
                 inputId="selectRegion",
                 label="Region/Country",
@@ -111,20 +112,26 @@ server <- function( input, output, session ) {
         )
     })
 
-    ## helper for next function
+    ## helper for next two functions
     get.data.and.id <- function( input ) {
         r <- input$selectRegion
         s <- input$selectSubregion
         f <- input$selectFirstDay
         l <- input$selectLastDay
+        w <- isolate( input$radioWhat )
+        if( w == "Cases" ) {
+            dt <- confirmed
+        } else {
+            dt <- deaths
+        }
         list(
-            dt=confirmed[
+            dt=dt[
                 Region==r &
                 Subregion==s &
                 Day >= f &
                 Day <= l
             ],
-            id=paste( c(r,s,f,l), collapse="+" )
+            id=paste( c(r,s,f,l,w), collapse="+" )
         )
     }
         
@@ -181,13 +188,14 @@ server <- function( input, output, session ) {
             return()
         }
 
-        ## list of region, subregion, first, and last days
-        rsfl <- strsplit( plotNames, "+", fixed=TRUE )
-        regions <- unlist( lapply(rsfl, `[[`, 1 ) )
-        subregions <- unlist( lapply(rsfl, `[[`, 2 ) )
-        first.days <- as.Date( unlist( lapply(rsfl, `[[`, 3 ) ) )
-        last.days <- as.Date( unlist( lapply(rsfl, `[[`, 4 ) ) )
-
+        ## list of region, subregion, first, last days, and cases/fatalities
+        rsflw <- strsplit( plotNames, "+", fixed=TRUE )
+        regions <- unlist( lapply(rsflw, `[[`, 1 ) )
+        subregions <- unlist( lapply(rsflw, `[[`, 2 ) )
+        first.days <- as.Date( unlist( lapply(rsflw, `[[`, 3 ) ) )
+        last.days <- as.Date( unlist( lapply(rsflw, `[[`, 4 ) ) )
+        what <- unlist( lapply( rsflw, `[[`, 5 ) )
+        
         ## find yMax
         yMax <- max( unlist( lapply(
             sessionData$plots,
@@ -210,7 +218,7 @@ server <- function( input, output, session ) {
             as.Date( NA ),
             NA,
             xlab = "Day",
-            ylab = "Confirmed Cases",
+            ylab = "",
             xlim = c( min(first.days)-2, max(last.days)+2 ),
             ylim = c( 1, yMax ),
             log  = logScale
@@ -237,7 +245,7 @@ server <- function( input, output, session ) {
                 lg.fit <- ""
             }
 
-            lg.this <- ds$dt$Region[1]
+            lg.this <- paste( ds$dt$Region[1], what[i] )
             if( ds$dt$Subregion[1] != "All" ) {
                 lg.this <- paste(
                     lg.this, ds$dt$Subregion[1], sep="/"
