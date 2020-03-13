@@ -47,6 +47,10 @@ ui <- fluidPage(
                 inputId="buttonClear",
                 label="Clear"
             ),
+            actionButton(
+                inputId="buttonClearPoints",
+                label="Clear Points"
+            ),
             p(),
             radioButtons(
                 inputId="radioScale",
@@ -56,7 +60,7 @@ ui <- fluidPage(
             )
         ),
         mainPanel(
-            plotOutput( outputId="plot" )
+            plotOutput( outputId="plot", click="plot_click" )
         )
     )
 )
@@ -64,7 +68,10 @@ ui <- fluidPage(
 server <- function( input, output, session ) {
 
     ## names of data sets to plot, and fitted models
-    sessionData <- reactiveValues( plots=list() )
+    sessionData <- reactiveValues(
+        plots=list(),
+        points=list()
+    )
     
     ## adjust subregion selectInput to selected region
     observe({
@@ -101,7 +108,7 @@ server <- function( input, output, session ) {
         )
     })
 
-    ## helper for next 2 functions
+    ## helper for next function
     get.data.and.id <- function( input ) {
         r <- input$selectRegion
         s <- input$selectSubregion
@@ -118,8 +125,7 @@ server <- function( input, output, session ) {
         )
     }
         
-    
-    ## add data set to plots 
+    ## add data set to plot 
     observeEvent( input$buttonAdd, {
         dt.id <- get.data.and.id( input )
         if( ! dt.id$id %in% sessionData$plots ) {
@@ -130,7 +136,7 @@ server <- function( input, output, session ) {
         }
     })
 
-    ## add data set with fit to dataSets 
+    ## add data set with fit to plot
     observeEvent( input$buttonModel, {
         dt.id <- get.data.and.id( input )
         if( ! dt.id$id %in% sessionData$plots ) {
@@ -141,10 +147,30 @@ server <- function( input, output, session ) {
         }
     })
 
+    ## add point to plot on click
+    observeEvent( input$plot_click, {
+        point.id <- paste(
+            input$plot_click$x,
+            input$plot_click$y,
+            sep="+"
+        )
+        sessionData$points[[ point.id ]] <- list(
+            x=input$plot_click$x,
+            y=input$plot_click$y
+        )
+    })
+    
     ## clear the plot 
     observeEvent( input$buttonClear, {
         sessionData$plots <- list()
+        sessionData$points <- list()
     })
+
+    ## clear points on the plot 
+    observeEvent( input$buttonClearPoints, {
+        sessionData$points <- list()
+    })
+
 
     output$plot <- renderPlot({
         plotNames <- names( sessionData$plots )
@@ -233,6 +259,22 @@ server <- function( input, output, session ) {
             lty=1,
             pch=16
         )
+
+        ## points
+        for( p in sessionData$points ) {
+            points( p$x, p$y, pch=1 )
+            text(
+                p$x,
+                p$y,
+                labels=paste(
+                    as.Date(p$x),
+                    format(p$y, digits=2),
+                    sep=", "
+                ),
+                pos=3,
+                xpd=TRUE
+            )
+        }
     })
     
 }
