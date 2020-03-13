@@ -53,11 +53,10 @@ ui <- fluidPage(
                 label="Clear Points"
             ),
             p(),
-            radioButtons(
-                inputId="radioScale",
-                label="Vertical Scale",
-                choices=c("Linear","Logarithmic"),
-                selected="Logarithmic"
+            checkboxInput(  
+                inputId="checkboxScale",
+                label="Log Scale",
+                value=TRUE
             ),
             width=3
         ),
@@ -199,10 +198,10 @@ server <- function( input, output, session ) {
         yMax <- 2*yMax
         
         ## set logscale
-        if( input$radioScale=="Linear" ) {
-            logScale <- ""
-        } else {
+        if( input$checkboxScale ) {
             logScale <- "y"
+        } else {
+            logScale <- ""
         }
         
         ## set the stage
