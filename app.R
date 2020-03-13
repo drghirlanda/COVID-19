@@ -211,7 +211,7 @@ server <- function( input, output, session ) {
             as.Date( NA ),
             NA,
             xlab = "Day",
-            ylab = "Count",
+            ylab = "Confirmed Cases",
             xlim = c( min(first.days)-2, max(last.days)+2 ),
             ylim = c( 1, yMax ),
             log  = logScale
