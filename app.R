@@ -73,10 +73,10 @@ server <- function( input, output, session ) {
 
     ## names of data sets to plot, and fitted models
     sessionData <- reactiveValues(
-        plots=data.table( x=as.Date(numeric(0)), y=numeric(0), id=character(0) ),
+        plots=NULL,
         fits=list(),
         points=list(),
-        buildingModel=NULL
+        buildModel=NULL
     )
     
     ## adjust subregion selectInput to selected region
@@ -115,52 +115,57 @@ server <- function( input, output, session ) {
     })
 
     ## helper for next two functions
-    get.data.and.id <- function( input ) {
+    get.data.with.id <- function( start, end ) {
         r <- input$selectRegion
         s <- input$selectSubregion
-        f <- input$selectFirstDay
-        l <- input$selectLastDay
+        f <- start
+        l <- end
         w <- isolate( input$radioWhat )
         if( w == "Cases" ) {
             dt <- confirmed
         } else {
             dt <- deaths
         }
-        list(
-            dt=dt[
-                Region==r &
-                Subregion==s &
-                Day >= f &
-                Day <= l
-            ],
-            id=paste( c(r,s,f,l,w), collapse="+" )
-        )
+        my.data <- dt[
+            Region==r &
+            Subregion==s &
+            Day >= f &
+            Day <= l
+        ]
+        my.data$Id <- paste( c(r,s,f,l,w), collapse="+" )
+        my.data
     }
         
     ## add data set to plot 
     observeEvent( input$buttonAdd, {
-        dt.id <- get.data.and.id( input )
-        if( ! dt.id$id %in% sessionData$plots ) {
-            sessionData$plots[[ dt.id$id ]] <- list(
-                dt=dt.id$dt,
-                fit=NULL
+        start <- input$selectFirstDay
+        end <- input$selectLastDay
+        dt <- get.data.with.id( start, end )
+        if( is.null( sessionData$plots ) ) { # first data set
+            sessionData$plots <- dt
+        } else if( ! dt$Id[1] %in% unique(sessionData$plots$Id) ) {
+            sessionData$plots <- rbind(
+                sessionData$plots,
+                dt
             )
         }
     })
 
-    ## add data set with fit to plot
-    observeEvent( input$buildModel, {
+    ## start or cancel model build
+    observeEvent( input$buttonModel, {
         if( is.null( sessionData$buildModel ) ) {
             sessionData$buildModel <- list()
-            updateActionButton( session, "buildModel", label="Cancel Model" )
+            updateActionButton( session, "buttonModel", label="Cancel Model" )
         } else {
             sessionData$buildModel <- NULL
-            updateActionButton( session, "buildModel", label="Build Model" )
+            updateActionButton( session, "buttonModel", label="Build Model" )
         }
-    }   
+    })   
 
-    ## add point to plot on click
+    ## when plot is clicked, add point to plot or build model
     observeEvent( input$plot_click, {
+        print( sessionData$buildModel$start )
+        print( sessionData$buildModel$end )
         if( is.null( sessionData$buildModel ) ) {
             point.id <- paste(
                 input$plot_click$x,
@@ -174,22 +179,35 @@ server <- function( input, output, session ) {
         } else {
             if( is.null( sessionData$buildModel$start ) ) {
                 sessionData$buildModel$start <- input$plot_click$x
-                
-            dt.id <- get.data.and.id( input )
-        if( ! dt.id$id %in% sessionData$plots ) {
-            sessionData$plots[[ dt.id$id ]] <- list(
-                dt=dt.id$dt,
-                fit=exp.fit( dt.id$dt )
-            )
+                my.point <- nearPoints( sessionData$plots, input$plot_click, xvar="Day", yvar="Count", maxpoints=1 )
+            } else {
+                sessionData$buildModel$end <- input$plot_click$x
+                my.point <- nearPoints( sessionData$plots, input$plot_click, xvar="Day", yvar="Count", maxpoints=1 )
+                dt <- sessionData$plots[
+                                      Id== my.point$Id &
+                                      Day>=sessionData$buildModel$start &
+                                      Day<=sessionData$buildModel$end
+                                  ]
+                id <- paste(
+                    
+                )
+                )
+                if( ! dt$Id[1] %in% names(sessionData$fits) ) {
+                    sessionData$fits[[ dt$Id[1] ]] <- exp.fit( dt )
+                }
+                print( names( sessionData$fits ) )
+                updateActionButton( session, "buttonModel", label="Build Model" )
+                sessionData$buildModel <- NULL
+            }
         }
     })
 
-        })
-    
     ## clear the plot 
     observeEvent( input$buttonClear, {
-        sessionData$plots <- list()
+        sessionData$plots <- NULL
+        sessionData$its <- list()
         sessionData$points <- list()
+        sessionData$buildModel <- NULL
     })
 
     ## clear points on the plot 
@@ -197,13 +215,15 @@ server <- function( input, output, session ) {
         sessionData$points <- list()
     })
 
-
+    ## this does the heavy lifting...
     output$plot <- renderPlot({
-        plotNames <- names( sessionData$plots )
-        if( ! length( plotNames ) ) {
+        if( is.null( sessionData$plots ) ) {
             return()
         }
 
+        plotNames <- unique( sessionData$plots$Id )
+        print( plotNames )
+        
         ## list of region, subregion, first, last days, and cases/fatalities
         rsflw <- strsplit( plotNames, "+", fixed=TRUE )
         regions <- unlist( lapply(rsflw, `[[`, 1 ) )
@@ -213,11 +233,7 @@ server <- function( input, output, session ) {
         what <- unlist( lapply( rsflw, `[[`, 5 ) )
         
         ## find yMax
-        yMax <- max( unlist( lapply(
-            sessionData$plots,
-            function(x){ max(x$dt$Count) }
-        )))
-
+        yMax <- max( sessionData$plots$Count )
         ## leave room for model overshoot
         yMax <- 2*yMax
         
@@ -245,26 +261,28 @@ server <- function( input, output, session ) {
         lg.col  <- c()
         ## add points
         i <- 1
-        for( ds in sessionData$plots ) {
-            points( ds$dt$Day, ds$dt$Count, pch=16, col=i )
-            if( ! is.null( ds$fit ) ) {
-                exp.plot( ds$fit, add=TRUE, col=i, model=TRUE )
+        for( id in plotNames ) {
+            dt <- sessionData$plots[ Id==id ]
+            points( dt$Day, dt$Count, pch=16, col=i )
+            if( ! is.null( sessionData$fits[[ id ]] ) ) {
+                fit <- sessionData$fits[[ id ]]
+                exp.plot( fit, add=TRUE, col=i, model=TRUE )
                 lg.fit <- paste0(
                     " ",
                     as.Date( first.days[i] ),
                     "/",
                     as.Date( last.days[i] ),
                     ", Td=",
-                    format( 1 / coef(ds$fit$fit)[2], digits=3 )
+                    format( 1 / coef(fit)[2], digits=3 )
                 )
             } else {
                 lg.fit <- ""
             }
 
-            lg.this <- paste( ds$dt$Region[1], what[i] )
-            if( ds$dt$Subregion[1] != "All" ) {
+            lg.this <- paste( dt$Region[1], what[i] )
+            if( dt$Subregion[1] != "All" ) {
                 lg.this <- paste(
-                    lg.this, ds$dt$Subregion[1], sep="/"
+                    lg.this, dt$Subregion[1], sep="/"
                 )
             }
             lg.this <- paste0( lg.this, lg.fit )
