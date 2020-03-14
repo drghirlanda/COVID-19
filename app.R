@@ -27,13 +27,13 @@ ui <- fluidPage(
             selectInput(
                 inputId="selectFirstDay",
                 label="Start",
-                choices=unique( confirmed$Day ),
+                choices=sort( unique( confirmed$Day ) ),
                 selected=min( confirmed$Day )
             ),
             selectInput(
                 inputId="selectLastDay",
                 label="End",
-                choices=unique( confirmed$Day ),
+                choices=sort( unique( confirmed$Day ) ), 
                 selected=max( confirmed$Day )
             ),
             actionButton(
@@ -42,7 +42,7 @@ ui <- fluidPage(
             ),
             actionButton(
                 inputId="buttonModel",
-                label="Add Data and Model"
+                label="Build Model"
             ),
             p(),
             actionButton(
@@ -73,8 +73,10 @@ server <- function( input, output, session ) {
 
     ## names of data sets to plot, and fitted models
     sessionData <- reactiveValues(
-        plots=list(),
-        points=list()
+        plots=data.table( x=as.Date(numeric(0)), y=numeric(0), id=character(0) ),
+        fits=list(),
+        points=list(),
+        buildingModel=NULL
     )
     
     ## adjust subregion selectInput to selected region
@@ -101,13 +103,13 @@ server <- function( input, output, session ) {
         updateSelectInput(
             session,
             inputId="selectFirstDay",
-            choices=d,
+            choices=sort(d),
             selected=min(d)
         )
         updateSelectInput(
             session,
             inputId="selectLastDay",
-            choices=d,
+            choices=sort(d),
             selected=max(d)
         )
     })
@@ -147,8 +149,33 @@ server <- function( input, output, session ) {
     })
 
     ## add data set with fit to plot
-    observeEvent( input$buttonModel, {
-        dt.id <- get.data.and.id( input )
+    observeEvent( input$buildModel, {
+        if( is.null( sessionData$buildModel ) ) {
+            sessionData$buildModel <- list()
+            updateActionButton( session, "buildModel", label="Cancel Model" )
+        } else {
+            sessionData$buildModel <- NULL
+            updateActionButton( session, "buildModel", label="Build Model" )
+        }
+    }   
+
+    ## add point to plot on click
+    observeEvent( input$plot_click, {
+        if( is.null( sessionData$buildModel ) ) {
+            point.id <- paste(
+                input$plot_click$x,
+                input$plot_click$y,
+                sep="+"
+            )
+            sessionData$points[[ point.id ]] <- list(
+                x=input$plot_click$x,
+                y=input$plot_click$y
+            )
+        } else {
+            if( is.null( sessionData$buildModel$start ) ) {
+                sessionData$buildModel$start <- input$plot_click$x
+                
+            dt.id <- get.data.and.id( input )
         if( ! dt.id$id %in% sessionData$plots ) {
             sessionData$plots[[ dt.id$id ]] <- list(
                 dt=dt.id$dt,
@@ -157,18 +184,7 @@ server <- function( input, output, session ) {
         }
     })
 
-    ## add point to plot on click
-    observeEvent( input$plot_click, {
-        point.id <- paste(
-            input$plot_click$x,
-            input$plot_click$y,
-            sep="+"
-        )
-        sessionData$points[[ point.id ]] <- list(
-            x=input$plot_click$x,
-            y=input$plot_click$y
-        )
-    })
+        })
     
     ## clear the plot 
     observeEvent( input$buttonClear, {
