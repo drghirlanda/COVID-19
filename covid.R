@@ -132,7 +132,7 @@ exp.fit <- function( dt, min.count=1 ) {
     )
 }
 
-exp.plot <- function( fit.out, add=FALSE, npred=0, col=1, model ) {
+exp.plot <- function( fit.out, add=FALSE, npred=0, col=1, model=TRUE, data=TRUE ) {
     first.day <- min( fit.out$dt$Day )
     last.day <- max( fit.out$dt$Day )
     pred.days <- as.Date( first.day : (last.day + npred) )
@@ -164,8 +164,10 @@ exp.plot <- function( fit.out, add=FALSE, npred=0, col=1, model ) {
             log="y"
         )
     }
-    fit.out$dt[, points( Count ~ Day, pch=16, col=col ) ]
-    if( model & sum( ! is.na( pred.count ) ) > 0 ) {
+    if( data==TRUE ) {
+        fit.out$dt[, points( Count ~ Day, pch=16, col=col ) ]
+    }
+    if( model==TRUE & sum( ! is.na( pred.count ) ) > 0 ) {
         lines( pred.days, pred.count, col=col )
         lines( pred.days2, pred.count2, col=col, lty=3 )
     }
