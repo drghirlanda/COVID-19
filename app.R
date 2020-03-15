@@ -28,7 +28,9 @@ ui <- fluidPage(
                 inputId="selectDays",
                 label="Days",
                 min=min( confirmed$Day ),
-                max=max( confirmed$Day )
+                max=max( confirmed$Day ),
+                start=min( confirmed$Day ),
+                end=max( confirmed$Day )
             ),
             actionButton(
                 inputId="buttonAdd",
@@ -93,10 +95,12 @@ server <- function( input, output, session ) {
     observe({
         r <- input$selectRegion
         s <- input$selectSubregion
-        d <- confirmed[ Region==r & Subregion==s & Count>0, Day ]
+        d <- confirmed[ Region==r & Subregion==s, Day ]
         updateDateRangeInput(
             session,
             inputId="selectDays",
+            start=min(d),
+            end=max(d),
             min=min(d),
             max=max(d)
         )
@@ -110,9 +114,13 @@ server <- function( input, output, session ) {
         unlist( strsplit( id, "+", fixed=TRUE ) )
     }
     
-    uiMessage <- function( ..., sep=" " ) {
+    uiMessage <- function( ..., sep=" ", err=FALSE ) {
+        style <- "margin-top: 20px;"
+        if( err ) {
+            style <- paste( style, "color: red;" )
+        }
         output$info <- renderUI({
-            tags$p( paste(..., sep=sep), style="margin-top: 20px" )
+            tags$p( paste(..., sep=sep), style=style )
         })
     }
     
@@ -129,6 +137,16 @@ server <- function( input, output, session ) {
             dt <- confirmed
         } else {
             dt <- deaths
+        }
+
+        print( f )
+        
+        if( is.na(f) | is.na(l) ) {
+            uiMessage(
+                "Please select both start and end dates",
+                err=TRUE
+            )
+            return()
         }
         
         ## extract data 
