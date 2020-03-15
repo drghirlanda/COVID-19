@@ -24,17 +24,11 @@ ui <- fluidPage(
                     confirmed[order(-SubregionTotal),Subregion]
                 )
             ),
-            selectInput(
-                inputId="selectFirstDay",
-                label="Start",
-                choices=sort( unique( confirmed$Day ) ),
-                selected=min( confirmed$Day )
-            ),
-            selectInput(
-                inputId="selectLastDay",
-                label="End",
-                choices=sort( unique( confirmed$Day ) ), 
-                selected=max( confirmed$Day )
+            dateRangeInput(
+                inputId="selectDays",
+                label="Days",
+                min=min( confirmed$Day ),
+                max=max( confirmed$Day )
             ),
             actionButton(
                 inputId="buttonAdd",
@@ -100,17 +94,11 @@ server <- function( input, output, session ) {
         r <- input$selectRegion
         s <- input$selectSubregion
         d <- confirmed[ Region==r & Subregion==s & Count>0, Day ]
-        updateSelectInput(
+        updateDateRangeInput(
             session,
-            inputId="selectFirstDay",
-            choices=sort(d),
-            selected=min(d)
-        )
-        updateSelectInput(
-            session,
-            inputId="selectLastDay",
-            choices=sort(d),
-            selected=max(d)
+            inputId="selectDays",
+            min=min(d),
+            max=max(d)
         )
     })
 
@@ -134,8 +122,8 @@ server <- function( input, output, session ) {
         ## get selectors for data set
         r <- input$selectRegion
         s <- input$selectSubregion
-        f <- input$selectFirstDay
-        l <- input$selectLastDay
+        f <- input$selectDays[1]
+        l <- input$selectDays[2]
         w <- isolate( input$radioWhat )
         if( w == "Cases" ) {
             dt <- confirmed
