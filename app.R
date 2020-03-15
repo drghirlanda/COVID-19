@@ -335,6 +335,9 @@ server <- function( input, output, session ) {
             fit <- sessionData$fits[[ id ]]
             pp <- exp.plot( fit, add=TRUE, col=i, model=TRUE, data=TRUE )
             lg.fit <- paste0(
+                dt$Region[1],
+                " ",
+                dt$Subregion[1],
                 " ",
                 as.Date( min( pp$Day ) ),
                 "/",
