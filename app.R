@@ -4,12 +4,15 @@ library(zoo)
 
 source("covid.R")
 
-confirmed <- fread("covid-confirmed.csv")
-confirmed$Day <- as.Date( confirmed$Day, format="%Y-%m-%d" )
-deaths <- fread("covid-deaths.csv")
-deaths$Day <- as.Date( deaths$Day, format="%Y-%m-%d" )
+load.covid.data <- function() {
+    confirmed <<- fread("covid-confirmed.csv")
+    confirmed$Day <<- as.Date( confirmed$Day, format="%Y-%m-%d" )
+    deaths <<- fread("covid-deaths.csv")
+    deaths$Day <<- as.Date( deaths$Day, format="%Y-%m-%d" )
+}
 
-## initial sorting of regions by cases
+load.covid.data()
+    
 sorted.regions <- confirmed[
    ,
     max(Count),
@@ -18,16 +21,16 @@ sorted.regions <- confirmed[
     order(-V1),
     Region
 ]
-## initial sorting of subregions of the region with most cases
-sorted.subregions <- confirmed[
-    Region==sorted.regions[1],
-    max(Count),
-    by=Subregion
-][
-    order(-V1),
-    Subregion
-]
-
+sorted.subregions <- 
+    confirmed[
+        Region == sorted.regions[1],
+        max(Count),
+        by=Subregion
+    ][
+        order(-V1),
+        Subregion
+    ]
+    
 ui <- fluidPage(
     titlePanel( HTML("COVID-19: Understanding Trends - Instructions are <a target=\"_blank\" href=\"https://dataworks.consulting/covid-19\">here</a>") ),
     sidebarLayout(
@@ -89,6 +92,24 @@ ui <- fluidPage(
 
 server <- function( input, output, session ) {
 
+    ## load data here so that they are updated whenever the app is
+    ## reloaded, without restarting the shiny server.
+    load.covid.data()
+
+    sorted.regions <- confirmed[
+       ,
+        max(Count),
+        by=Region
+    ][
+        order(-V1),
+        Region
+    ]
+    updateSelectInput( 
+        session,
+        inputId="selectRegion",
+        choices=sorted.regions
+    )
+    
     ## names of data sets to plot, and fitted models
     sessionData <- reactiveValues(
         plots=NULL,
