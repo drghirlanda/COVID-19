@@ -4,8 +4,10 @@ library(zoo)
 
 source("covid.R")
 
-deaths <- load.jhu.csse.data( "Deaths" )
-confirmed <- load.jhu.csse.data( "Confirmed" )
+confirmed <- fread("covid-confirmed.csv")
+confirmed$Day <- as.Date( confirmed$Day, format="%Y-%m-%d" )
+deaths <- fread("covid-deaths.csv")
+deaths$Day <- as.Date( deaths$Day, format="%Y-%m-%d" )
 
 ## initial sorting of regions by cases
 sorted.regions <- confirmed[
@@ -444,4 +446,3 @@ server <- function( input, output, session ) {
 }
 
 shinyApp( ui=ui, server=server )
-
