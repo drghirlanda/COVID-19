@@ -4,8 +4,27 @@ library(zoo)
 
 source("covid.R")
 
-deaths <- load.covid( "Deaths" )
-confirmed <- load.covid( "Confirmed" )
+deaths <- load.jhu.csse.data( "Deaths" )
+confirmed <- load.jhu.csse.data( "Confirmed" )
+
+## initial sorting of regions by cases
+sorted.regions <- confirmed[
+   ,
+    max(Count),
+    by=Region
+][
+    order(-V1),
+    Region
+]
+## initial sorting of subregions of the region with most cases
+sorted.subregions <- confirmed[
+    Region==sorted.regions[1],
+    max(Count),
+    by=Subregion
+][
+    order(-V1),
+    Subregion
+]
 
 ui <- fluidPage(
     titlePanel( HTML("COVID-19: Understanding Trends - Instructions are <a target=\"_blank\" href=\"https://dataworks.consulting/covid-19\">here</a>") ),
@@ -15,14 +34,12 @@ ui <- fluidPage(
             selectInput(
                 inputId="selectRegion",
                 label="Region/Country",
-                choices=unique( confirmed[order(-RegionTotal),Region] )
+                choices=sorted.regions
             ),
             selectInput(
                 inputId="selectSubregion",
                 label="Province/State",
-                choices=unique(
-                    confirmed[order(-SubregionTotal),Subregion]
-                )
+                choices=sorted.subregions
             ),
             dateRangeInput(
                 inputId="selectDays",
@@ -77,31 +94,40 @@ server <- function( input, output, session ) {
     
     ## adjust subregion selectInput to selected region
     observe({
-        subregions <- unique(
+        sorted.subregions <- unique(
             confirmed[
-                Region == input$selectRegion ][
-                order(-SubregionTotal),
+                Region == input$selectRegion,
+                max(Count),
+                by=Subregion
+            ][
+                order(-V1),
                 Subregion
             ]
         )
         updateSelectInput(
             session,
             inputId="selectSubregion",
-            choices=subregions
+            choices=sorted.subregions
         )
     })
     
     ## adjust day according to region and subregion
-    observe({
+    observeEvent( input$selectRegion, {
         r <- input$selectRegion
-        s <- input$selectSubregion
-        d <- confirmed[ Region==r & Subregion==s, Day ]
+        d <- confirmed[ Region==r, Day ]
+        ## there seems to be a bug in updateDateRangeInput: if the two
+        ## calls below are merged into one, the start date is set to
+        ## NULL. making two separate calls works.
         updateDateRangeInput(
             session,
             inputId="selectDays",
             start=min(d),
             end=max(d),
-            min=min(d),
+            min=min(d)
+        )
+        updateDateRangeInput(
+            session,
+            inputId="selectDays",
             max=max(d)
         )
     })
@@ -139,8 +165,6 @@ server <- function( input, output, session ) {
             dt <- deaths
         }
 
-        print( f )
-        
         if( is.na(f) | is.na(l) ) {
             uiMessage(
                 "Please select both start and end dates",
@@ -185,6 +209,10 @@ server <- function( input, output, session ) {
 
     ## when plot is clicked, output point info and possibly build model
     observeEvent( input$plot_click, {
+        if( is.null(sessionData$plots) ) {
+            return()
+        }
+
         p <- nearPoints( sessionData$plots, input$plot_click, xvar="Day", yvar="Count", maxpoints=1 )
         if( nrow(p)==0 ) {
             uiMessage(
@@ -200,6 +228,15 @@ server <- function( input, output, session ) {
         }
         
         if( is.null( sessionData$buildModel$First ) ) {
+            ## check selected point is not the last point
+            maxDay <- sessionData$plots[
+                                      Region==p$Region &
+                                      Subregion==p$Subregion,
+                                      max(Day)
+                                  ]
+            if( p$Day == maxDay ) {
+                return()
+            }
             sessionData$buildModel$First      <- p$Day
             sessionData$buildModel$FirstCount <- p$Count
             sessionData$buildModel$Region     <- p$Region
@@ -249,7 +286,11 @@ server <- function( input, output, session ) {
             sessionData$buildModel$What      != p$What ) {
             return()
         }
-
+        
+        if( p$Day <= sessionData$buildModel$First ) {
+            return()
+        }
+        
         sessionData$buildModel$Last      <- p$Day
         sessionData$buildModel$LastCount <- p$Count
 

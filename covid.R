@@ -1,11 +1,9 @@
 data(state)
 
-load.covid <- function( file ) {
+load.jhu.csse.data <- function( file ) {
     ## read raw data file
     file <- paste0(
-        "csse_covid_19_data/",
-        "csse_covid_19_time_series/",
-        "time_series_19-covid-",
+        "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-",
         file,
         ".csv"
     )
@@ -105,10 +103,6 @@ load.covid <- function( file ) {
         }
     }
 
-    ## add total counts by region and subregion, for sorting
-    dt[, RegionTotal := sum(Count,na.rm=TRUE), by=Region ]
-    dt[, SubregionTotal := sum(Count,na.rm=TRUE), by=.(Region,Subregion) ]
-    
     dt
 }    
 
