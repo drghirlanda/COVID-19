@@ -187,7 +187,11 @@ server <- function( input, output, session ) {
     observeEvent( input$plot_click, {
         p <- nearPoints( sessionData$plots, input$plot_click, xvar="Day", yvar="Count", maxpoints=1 )
         if( nrow(p)==0 ) {
-            uiMessage( "Click too far from any point" )
+            uiMessage(
+                "Clicked on",
+                as.Date(input$plot_click$x),
+                round(input$plot_click$y)
+            )
             return()
         }
 
@@ -245,6 +249,7 @@ server <- function( input, output, session ) {
             sessionData$buildModel$What      != p$What ) {
             return()
         }
+
         sessionData$buildModel$Last      <- p$Day
         sessionData$buildModel$LastCount <- p$Count
 
@@ -333,7 +338,7 @@ server <- function( input, output, session ) {
         ## add fits
         for( id in names( sessionData$fits ) ) {
             fit <- sessionData$fits[[ id ]]
-            pp <- exp.plot( fit, add=TRUE, col=i, model=TRUE, data=TRUE )
+            pp <- exp.plot( fit, add=TRUE, col=i, model=TRUE, data=FALSE )
             lg.fit <- paste0(
                 dt$Region[1],
                 " ",
@@ -353,7 +358,7 @@ server <- function( input, output, session ) {
         if( logScale=="" ) {
             lg.pos <- "topleft"
         } else {
-            lg.pos <- "bottomright"
+            lg.pos <- "topleft"
         }
         legend(
             lg.pos,
@@ -367,9 +372,10 @@ server <- function( input, output, session ) {
         ## build model info
         if( ! is.null( sessionData$buildModel ) ) {
             if( !is.null( sessionData$buildModel$First ) ) {
-                with( sessionData$buildModel, points( First, FirstCount, pch=1, cex=1.5 ) )
+                with( sessionData$buildModel, points( First, FirstCount, pch=1, cex=2 ) )
             }
             if( !is.null( sessionData$buildModel$InProgress ) ) {
+                with( sessionData$buildModel, points( Last, LastCount, pch=1, cex=2 ) )
                 fit <- sessionData$buildModel$InProgress
                 exp.plot( fit, add=TRUE, col="gray", model=TRUE, data=FALSE )
             }
