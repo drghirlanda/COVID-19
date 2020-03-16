@@ -407,14 +407,20 @@ server <- function( input, output, session ) {
         for( id in names( sessionData$fits ) ) {
             fit <- sessionData$fits[[ id ]]
             pp <- exp.plot( fit, add=TRUE, col=i, model=TRUE, data=FALSE )
+            subregion <- fit$dt$Subregion[1]
+            if( subregion == "All" ) {
+                subregion <- ""
+            } else {
+                subregion <- paste0(subregion," ")
+            }
+            
             lg.fit <- paste0(
                 fit$dt$Region[1],
                 " ",
-                fit$dt$Subregion[1],
-                " ",
-                as.Date( min( pp$Day ) ),
+                subregion,
+                format( min( pp$Day ), "%m-%d" ),
                 "/",
-                as.Date( max( pp$Day ) ),
+                format( max( pp$Day ), "%m-%d" ),
                 ", Td=",
                 format( 1 / coef(fit$fit)[2], digits=3 ),
                 ", r2=",
