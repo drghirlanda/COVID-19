@@ -13,6 +13,11 @@ italy <- fread("https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-a
 ## retain day, drop time:
 italy[, data := as.Date( data, format="%Y-%m-%d" ) ]
 
+## the official Italian data are more accurate but do not cover the
+## whole date range in the jhu data. here we reshape the Italian data
+## in the same format and we merge them.
+
+## confirmed cases data
 italy.confirmed <-
     italy[,
           .(
@@ -30,6 +35,7 @@ setnames(
     c("Subregion","Region","Lat","Long","Day","Count")
 )
 
+## deaths data
 italy.deaths <-
     italy[,
           .(
@@ -46,6 +52,9 @@ setnames(
     c("V1","V2","V3","V4","data","deceduti"),
     c("Subregion","Region","Lat","Long","Day","Count")
 )
+
+## delete Italian data from JHU when we have the official data, then
+## merge with the official data:
 
 confirmed <- confirmed[
     ! (Region=="Italy" & Day %in% italy.confirmed$Day)
