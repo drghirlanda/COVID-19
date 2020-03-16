@@ -115,14 +115,16 @@ server <- function( input, output, session ) {
     observeEvent( input$selectRegion, {
         r <- input$selectRegion
         d <- confirmed[ Region==r, Day ]
+        newStart <- max( min(d), input$selectDays[1] )
+        newEnd <- min( max(d), input$selectDays[2] )
         ## there seems to be a bug in updateDateRangeInput: if the two
         ## calls below are merged into one, the start date is set to
         ## NULL. making two separate calls works.
         updateDateRangeInput(
             session,
             inputId="selectDays",
-            start=min(d),
-            end=max(d),
+            start=newStart,
+            end=newEnd,
             min=min(d)
         )
         updateDateRangeInput(
