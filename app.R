@@ -59,7 +59,7 @@ ui <- fluidPage(
         ),
         mainPanel(
             uiOutput( outputId="info" ),
-            plotOutput( outputId="plot", click="plot_click", hover=hoverOpts(id="plot_hover",delay=50,delayType="debounce") ),
+            plotOutput( outputId="plot", click="plot_click", hover=hoverOpts(id="plot_hover",delay=250,delayType="throttle") ),
             uiOutput( outputId="appInfo" ),
             width=9
         )
