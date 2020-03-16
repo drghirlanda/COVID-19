@@ -77,9 +77,11 @@ ui <- fluidPage(
         mainPanel(
             uiOutput( outputId="info" ),
             plotOutput( outputId="plot", click="plot_click", hover=hoverOpts(id="plot_hover",delay=250,delayType="throttle") ),
-            uiOutput( outputId="appInfo" ),
             width=9
         )
+    ),
+    fluidRow(
+        column( 12, uiOutput( outputId="appInfo" ) )
     )
 )
 
@@ -391,7 +393,9 @@ server <- function( input, output, session ) {
                 "/",
                 as.Date( max( pp$Day ) ),
                 ", Td=",
-                format( 1 / coef(fit$fit)[2], digits=3 )
+                format( 1 / coef(fit$fit)[2], digits=3 ),
+                ", r2=",
+                format( cor(pp$Count,fit$dt$Count)^2, digits=2 )
             )
             lg.text <- c( lg.text, lg.fit )
             lg.col <- c( lg.col, i )
