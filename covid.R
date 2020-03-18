@@ -1,10 +1,10 @@
 data(state)
 
-load.jhu.csse.data <- function( file ) {
+load.jhu.csse.data <- function( what ) {
     ## read raw data file
     file <- paste0(
         "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-",
-        file,
+        what,
         ".csv"
     )
     dt <- fread( file )
@@ -103,8 +103,38 @@ load.jhu.csse.data <- function( file ) {
         }
     }
 
+    dt$What <- what
+
     dt
 }    
+
+load.covid.data <- function() {
+    covid <- fread("covid.csv")
+    covid$Day <- as.Date( covid$Day, format="%Y-%m-%d" )
+    covid
+}
+
+covid.sorted.regions <- function( covid ) {
+    covid[
+       ,
+        max(Count),
+        by=Region
+    ][
+        order(-V1),
+        Region
+    ]
+}
+
+covid.sorted.subregions <- function( covid, region ) {
+    covid[
+        Region == region,
+        max(Count),
+        by=Subregion
+    ][
+        order(-V1),
+        Subregion
+    ]
+}
 
 get.totals <- function( dt ) {
     dt.tot <- dt[, sum(Count, na.rm=TRUE), by=Day ]

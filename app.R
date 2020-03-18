@@ -4,38 +4,27 @@ library(zoo)
 
 source("covid.R")
 
-load.covid.data <- function() {
-    confirmed <<- fread("covid-confirmed.csv")
-    confirmed$Day <<- as.Date( confirmed$Day, format="%Y-%m-%d" )
-    deaths <<- fread("covid-deaths.csv")
-    deaths$Day <<- as.Date( deaths$Day, format="%Y-%m-%d" )
-}
+covid <- load.covid.data()
 
-load.covid.data()
-    
-sorted.regions <- confirmed[
-   ,
-    max(Count),
-    by=Region
-][
-    order(-V1),
-    Region
+## some initial values for selectInputs:
+sorted.regions <- covid.sorted.regions( covid )
+sorted.subregions <- covid.sorted.subregions( covid, sorted.regions[1] )
+initial.what <- covid[
+    Region==sorted.regions[1] &
+    Subregion==sorted.subregions[1],
+    unique( What )
 ]
-sorted.subregions <- 
-    confirmed[
-        Region == sorted.regions[1],
-        max(Count),
-        by=Subregion
-    ][
-        order(-V1),
-        Subregion
-    ]
     
 ui <- fluidPage(
     titlePanel( HTML("COVID-19: Understanding Trends - Instructions are <a target=\"_blank\" href=\"https://dataworks.consulting/covid-19\">here</a>") ),
     sidebarLayout(
         sidebarPanel(
-            radioButtons( inputId="radioWhat", label=NULL, choices=c("Cases","Fatalities"), selected="Cases", inline=TRUE ),
+            selectInput(
+                inputId="selectWhat",
+                label="Data Type",
+                choices=initial.what,
+                selected=initial.what[1]
+            ),
             selectInput(
                 inputId="selectRegion",
                 label="Region/Country",
@@ -49,10 +38,10 @@ ui <- fluidPage(
             dateRangeInput(
                 inputId="selectDays",
                 label="Days",
-                min=min( confirmed$Day ),
-                max=max( confirmed$Day ),
-                start=min( confirmed$Day ),
-                end=max( confirmed$Day )
+                min=min( covid$Day ),
+                max=max( covid$Day ),
+                start=min( covid$Day ),
+                end=max( covid$Day )
             ),
             actionButton(
                 inputId="buttonAdd",
@@ -94,16 +83,9 @@ server <- function( input, output, session ) {
 
     ## load data here so that they are updated whenever the app is
     ## reloaded, without restarting the shiny server.
-    load.covid.data()
-
-    sorted.regions <- confirmed[
-       ,
-        max(Count),
-        by=Region
-    ][
-        order(-V1),
-        Region
-    ]
+    covid <- load.covid.data()
+    sorted.regions <- covid.sorted.regions( covid )
+    
     updateSelectInput( 
         session,
         inputId="selectRegion",
@@ -119,15 +101,9 @@ server <- function( input, output, session ) {
     
     ## adjust subregion selectInput to selected region
     observe({
-        sorted.subregions <- unique(
-            confirmed[
-                Region == input$selectRegion,
-                max(Count),
-                by=Subregion
-            ][
-                order(-V1),
-                Subregion
-            ]
+        sorted.subregions <- covid.sorted.subregions(
+            covid,
+            input$selectRegion
         )
         updateSelectInput(
             session,
@@ -135,11 +111,30 @@ server <- function( input, output, session ) {
             choices=sorted.subregions
         )
     })
-    
-    ## adjust day according to region and subregion
-    observeEvent( input$selectRegion, {
+
+    ## adjust data type choices to selected region and subregion
+    observe({
         r <- input$selectRegion
-        d <- confirmed[ Region==r, Day ]
+        s <- input$selectSubregion
+        w <- covid[
+            Region==r &
+            Subregion==s,
+            unique(What)
+        ]
+        print( w )
+        updateSelectInput(
+            session,
+            inputId="selectWhat",
+            choices=w,
+            selected=w[1]
+        )
+    })
+    
+    ## adjust day according to region and data type
+    observeEvent( {input$selectRegion; input$selectWhat}, {
+        r <- input$selectRegion
+        w <- input$selectWhat
+        d <- covid[ Region==r & What==w, unique(Day) ]
         newStart <- max( min(d), input$selectDays[1] )
         newEnd <- min( max(d), input$selectDays[2] )
         ## there seems to be a bug in updateDateRangeInput: if the two
@@ -176,7 +171,7 @@ server <- function( input, output, session ) {
             tags$p( paste(..., sep=sep), style=style )
         })
     }
-    
+        
     ## add data set to plot 
     observeEvent( input$buttonAdd, {
 
@@ -185,12 +180,7 @@ server <- function( input, output, session ) {
         s <- input$selectSubregion
         f <- input$selectDays[1]
         l <- input$selectDays[2]
-        w <- isolate( input$radioWhat )
-        if( w == "Cases" ) {
-            dt <- confirmed
-        } else {
-            dt <- deaths
-        }
+        w <- isolate( input$selectWhat )
 
         if( is.na(f) | is.na(l) ) {
             uiMessage(
@@ -201,15 +191,17 @@ server <- function( input, output, session ) {
         }
         
         ## extract data 
-        my.data <- dt[ Region    == r     &
+        my.data <- covid[ Region    == r     &
                        Subregion == s     &
+                       What      == w     &
                        Day       >= f     &
                        Day       <= l
                       ]
 
         ## add Id and What identifiers
-        my.data$Id <- pack.id( r,s,f,l,w )
-        my.data$What <- w
+        id <- pack.id( r,s,f,l,w )
+        my.data$Id <- id
+
 
         ## add data to sessionData, if not already there
         if( ! my.data$Id[1] %in% unique(sessionData$plots$Id) ) {
@@ -258,7 +250,8 @@ server <- function( input, output, session ) {
             ## check selected point is not the last point
             maxDay <- sessionData$plots[
                                       Region==p$Region &
-                                      Subregion==p$Subregion,
+                                      Subregion==p$Subregion &
+                                      What==p$What,
                                       max(Day)
                                   ]
             if( p$Day == maxDay ) {
@@ -269,7 +262,7 @@ server <- function( input, output, session ) {
             sessionData$buildModel$Region     <- p$Region
             sessionData$buildModel$Subregion  <- p$Subregion
             sessionData$buildModel$What       <- p$What
-            uiMessage( "First model point:", p$Region, p$Subregion, p$Day, p$Count, p$What )
+            uiMessage( "First model point:", p$Region, p$Subregion, p$What, p$Day, p$Count )
         } else {
             ## this is the second model point: move the InProgress fit to the completed fits
             id <- pack.id(
@@ -353,7 +346,7 @@ server <- function( input, output, session ) {
         if( is.null( sessionData$plots ) ) {
             return()
         }
-
+        
         plotNames <- unique( sessionData$plots$Id )
 
         xMin <- min( sessionData$plots$Day ) - 2
@@ -418,6 +411,8 @@ server <- function( input, output, session ) {
                 fit$dt$Region[1],
                 " ",
                 subregion,
+                fit$dt$What[1],
+                " ",
                 format( min( pp$Day ), "%m-%d" ),
                 "/",
                 format( max( pp$Day ), "%m-%d" ),
