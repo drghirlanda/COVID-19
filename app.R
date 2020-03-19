@@ -14,7 +14,7 @@ initial.what <- covid[
     Subregion==sorted.subregions[1],
     unique( What )
 ]
-    
+
 ui <- fluidPage(
     titlePanel( HTML("COVID-19: Understanding Trends - Instructions are <a target=\"_blank\" href=\"https://dataworks.consulting/covid-19\">here</a>") ),
     sidebarLayout(
@@ -121,7 +121,6 @@ server <- function( input, output, session ) {
             Subregion==s,
             unique(What)
         ]
-        print( w )
         updateSelectInput(
             session,
             inputId="selectWhat",
@@ -131,12 +130,22 @@ server <- function( input, output, session ) {
     })
     
     ## adjust day according to region and data type
-    observeEvent( {input$selectRegion; input$selectWhat}, {
+    observeEvent( input$selectRegion,
+    {
         r <- input$selectRegion
-        w <- input$selectWhat
-        d <- covid[ Region==r & What==w, unique(Day) ]
-        newStart <- max( min(d), input$selectDays[1] )
-        newEnd <- min( max(d), input$selectDays[2] )
+        s <- isolate( input$selectSubregion )
+        w <- isolate( input$selectWhat )
+        d <- covid[ Region==r & Subregion==s & What==w, unique(Day) ]
+        newStart <- max(
+            min(d),
+            isolate( input$selectDays[1] ),
+            na.rm=TRUE
+        )
+        newEnd <- min(
+            max(d),
+            isolate( input$selectDays[2] ),
+            na.rm=TRUE
+        )
         ## there seems to be a bug in updateDateRangeInput: if the two
         ## calls below are merged into one, the start date is set to
         ## NULL. making two separate calls works.
@@ -152,7 +161,8 @@ server <- function( input, output, session ) {
             inputId="selectDays",
             max=max(d)
         )
-    })
+    }
+    )
 
     pack.id <- function( r, s, f, l, w ) {
         paste( r, s, f, l, w, sep="+" )
@@ -375,7 +385,8 @@ server <- function( input, output, session ) {
             ylim = c( 1, yMax ),
             log  = logScale
         )
-
+        grid( nx=NA, ny=NULL )
+        
         ## set up legend data structures
         lg.text <- c()
         lg.col  <- c()
@@ -460,8 +471,7 @@ server <- function( input, output, session ) {
 
     output$appInfo <- renderUI({
         tagList(
-            tags$p( HTML("This tool is provided by <a href=\"https://dataworks.consulting\">DataWorks LLC</a> as is, without any implied fitness for any purpose. It may provide inaccurate information. DataWorks LLC and its representatives are not liable for any damage that may derive from the use of this tool. Data courtesy of <a href=\"https://systems.jhu.edu/research/public-health/ncov/\">Johns Hopkins Center for Systems Science and Engineering</a>. Retrieved from the <a href=\"https://github.com/CSSEGISandData/COVID-19\">COVID-19 github.com repository</a>.") ),
-            tags$p( HTML("&copy;&nbsp;DataWorks LLC 2020") )
+            tags$p( HTML("This tool is provided by <a href=\"https://dataworks.consulting\">DataWorks LLC</a> as is, without any implied fitness for any purpose. It may provide inaccurate information. DataWorks LLC and its representatives are not liable for any damage that may derive from the use of this tool. Data sources: <a href=\"https://github.com/pcm-dpc/COVID-19\">Italy</a>, <a href=\"https://github.com/opencovid19-fr\">France</a>, <a href=\"https://github.com/CSSEGISandData/COVID-19\">others</a>. &copy;&nbsp;DataWorks LLC 2020") )
         )
     })
     

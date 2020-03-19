@@ -117,7 +117,7 @@ load.covid.data <- function() {
 covid.sorted.regions <- function( covid ) {
     covid[
        ,
-        max(Count),
+        max(Count,na.rm=TRUE),
         by=Region
     ][
         order(-V1),
@@ -128,7 +128,7 @@ covid.sorted.regions <- function( covid ) {
 covid.sorted.subregions <- function( covid, region ) {
     covid[
         Region == region,
-        max(Count),
+        max(Count,na.rm=TRUE),
         by=Subregion
     ][
         order(-V1),
