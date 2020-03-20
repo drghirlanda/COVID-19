@@ -121,11 +121,17 @@ server <- function( input, output, session ) {
             Subregion==s,
             unique(What)
         ]
+        wNow <- input$selectWhat
+        if( wNow %in% w ) {
+            wNew <- wNow
+        } else {
+            wNew <- NULL
+        }
         updateSelectInput(
             session,
             inputId="selectWhat",
             choices=w,
-            selected=w[1]
+            selected=wNew
         )
     })
     
