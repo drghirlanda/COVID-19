@@ -1,0 +1,8 @@
+library(data.table)
+source("../../covid.R")
+covid <- fread("../../covid.csv")
+
+italy <- covid[ Region=="Italy" & Subregion=="All" ]
+
+dayMin <- min( italy$Day ) + 2
+dayMAx <- max( italy$Day ) - 2

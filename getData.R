@@ -61,12 +61,12 @@ fr[ Subregion=="France", Subregion := "All" ]
 fr[, Region := "France" ]
 
 ## fix some inconsistencies in names
-fr[ grep("Auvergne",Subregion), Subregion := "Auvergne-Rhóne-Alpes" ]
+fr[ grep("Auvergne",Subregion), Subregion := "Auvergne-RhÃ³ne-Alpes" ]
 fr[ grep("Grand",Subregion), Subregion := "Grand Est" ]
-fr[ grep("Bourgogne",Subregion), Subregion := "Bourgogne-Franche-Comté" ]
-fr[ grep("Provence",Subregion), Subregion := "Provence-Alpes-Cóte d'Azur" ]
+fr[ grep("Bourgogne",Subregion), Subregion := "Bourgogne-Franche-ComtÃ©" ]
+fr[ grep("Provence",Subregion), Subregion := "Provence-Alpes-CÃ³te d'Azur" ]
 fr[ grep("Centre",Subregion), Subregion := "Centre-Val de Loire" ]
-fr[ grep("La R",Subregion), Subregion := "La Réunion" ]
+fr[ grep("La R",Subregion), Subregion := "La RÃ©union" ]
 
 fr <- fr[, .(Subregion,Region,Day,cas_confirmes,deces) ]
 
