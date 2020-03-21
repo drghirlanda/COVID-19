@@ -61,12 +61,12 @@ fr[ Subregion=="France", Subregion := "All" ]
 fr[, Region := "France" ]
 
 ## fix some inconsistencies in names
-fr[ grep("Auvergne",Subregion), Subregion := "Auvergne-Rhóne-Alpes" ]
+fr[ grep("Auvergne",Subregion), Subregion := "Auvergne-Rhone-Alpes" ]
 fr[ grep("Grand",Subregion), Subregion := "Grand Est" ]
-fr[ grep("Bourgogne",Subregion), Subregion := "Bourgogne-Franche-Comté" ]
-fr[ grep("Provence",Subregion), Subregion := "Provence-Alpes-Cóte d'Azur" ]
+fr[ grep("Bourgogne",Subregion), Subregion := "Bourgogne-Franche-Comte" ]
+fr[ grep("Provence",Subregion), Subregion := "Provence-Alpes-Cote d'Azur" ]
 fr[ grep("Centre",Subregion), Subregion := "Centre-Val de Loire" ]
-fr[ grep("La R",Subregion), Subregion := "La Réunion" ]
+fr[ grep("La R",Subregion), Subregion := "La Reunion" ]
 
 fr <- fr[, .(Subregion,Region,Day,cas_confirmes,deces) ]
 
@@ -92,6 +92,26 @@ covid <- covid[ ! Region=="France" ]
 covid <- rbind( covid, fr )
 
 ## Spanish data
+
+## helper function for nasty date format
+spain.date <- function(d) {
+    as.Date(
+        unlist(
+            lapply(
+                strsplit( as.character(d), "-" ),
+                function(x) {
+                    y <- paste0("20",x[3],"-")
+                    y <- paste0(y,x[2],"-")
+                    if( nchar(x[1]) == 1 ) {
+                        y <- paste0(y,"0")
+                    }
+                    paste0( y, x[1] )
+                }
+            )
+        )
+    )
+}
+
 sp.names <- c(
     casos="Confirmed",
     fallecidos="Fatalities",
@@ -110,20 +130,23 @@ for( sp.what in names(sp.names) ) {
     dt[ Subregion=="Total", Subregion := "All" ]
     dt[ , Region := "Spain" ]
     dt[ , What := sp.names[[sp.what]] ]
+    dt$Day <- as.Date( dt$Day )
     sp <- rbind( sp, dt )
 }
 ## normalize region names
-sp[ grep("Andaluc",Subregion), Subregion := "Andalucía" ]
-sp[ grep("Arag",Subregion), Subregion := "Aragón" ]
-sp[ grep("Castilla",Subregion), Subregion := "Castilla y León" ]
-sp[ grep("Catalu",Subregion), Subregion := "Cataluña" ]
-sp[ grep("Vasco",Subregion), Subregion := "País Vasco" ]
+sp[ grep("Andaluc",Subregion), Subregion := "Andalucia" ]
+sp[ grep("Arag",Subregion), Subregion := "Aragon" ]
+sp[ grep("Castilla",Subregion), Subregion := "Castilla y Leon" ]
+sp[ grep("Catalu",Subregion), Subregion := "Cataluna" ]
+sp[ grep("Vasco",Subregion), Subregion := "Pais Vasco" ]
+
+sp$Day <- spain.date( sp$Day )
 
 sp$Lat <- sp$Long <- NA
 
 days <- sp[ Subregion=="All", Day ]
 
-covid <- covid[ ! (Region=="Spain" & Subregion=="All" & Day %in% days) ]
+covid <- covid[ ! (Region=="Spain" & Day %in% days) ]
 covid <- rbind( covid, sp )
 
 fwrite( covid, "covid.csv" )

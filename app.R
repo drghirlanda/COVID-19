@@ -14,6 +14,16 @@ initial.what <- covid[
     Subregion==sorted.subregions[1],
     unique( What )
 ]
+initial.start <- covid[
+    Region==sorted.regions[1] &
+    Subregion==sorted.subregions[1],
+    min(Day)
+]
+initial.end <- covid[
+    Region==sorted.regions[1] &
+    Subregion==sorted.subregions[1],
+    max(Day)
+]
 
 ui <- fluidPage(
     titlePanel( HTML("COVID-19: Understanding Trends - Instructions are <a target=\"_blank\" href=\"https://dataworks.consulting/covid-19\">here</a>") ),
@@ -38,10 +48,10 @@ ui <- fluidPage(
             dateRangeInput(
                 inputId="selectDays",
                 label="Days",
-                min=min( covid$Day ),
-                max=max( covid$Day ),
-                start=min( covid$Day ),
-                end=max( covid$Day )
+                min=initial.start,
+                max=initial.end,
+                start=initial.start,
+                end=initial.end
             ),
             actionButton(
                 inputId="buttonAdd",
@@ -136,35 +146,30 @@ server <- function( input, output, session ) {
     })
     
     ## adjust day according to region and data type
-    observeEvent( input$selectRegion,
-    {
+    observe({
         r <- input$selectRegion
-        s <- isolate( input$selectSubregion )
-        w <- isolate( input$selectWhat )
+        s <- input$selectSubregion 
+        w <- input$selectWhat 
         d <- covid[ Region==r & Subregion==s & What==w, unique(Day) ]
-        newStart <- max(
-            min(d),
-            isolate( input$selectDays[1] ),
-            na.rm=TRUE
-        )
-        newEnd <- min(
-            max(d),
-            isolate( input$selectDays[2] ),
-            na.rm=TRUE
-        )
+        oldStart <- isolate( input$selectDays[1] )
+        newStart <- max( min(d), oldStart, na.rm=TRUE )
+        oldEnd <- isolate( input$selectDays[2] )
+        newEnd <- min( max(d), oldEnd, na.rm=TRUE )
         ## there seems to be a bug in updateDateRangeInput: if the two
         ## calls below are merged into one, the start date is set to
         ## NULL. making two separate calls works.
+        print( paste(min(d), max(d)) )
+        print( paste(newStart, oldEnd) )
         updateDateRangeInput(
             session,
             inputId="selectDays",
             start=newStart,
-            end=newEnd,
-            min=min(d)
+            end=newEnd
         )
         updateDateRangeInput(
             session,
             inputId="selectDays",
+            min=min(d),
             max=max(d)
         )
     }
@@ -477,7 +482,7 @@ server <- function( input, output, session ) {
 
     output$appInfo <- renderUI({
         tagList(
-            tags$p( HTML("This tool is provided by <a href=\"https://dataworks.consulting\">DataWorks LLC</a> as is, without any implied fitness for any purpose. It may provide inaccurate information. DataWorks LLC and its representatives are not liable for any damage that may derive from the use of this tool. Data sources: <a href=\"https://github.com/pcm-dpc/COVID-19\">Italy</a>, <a href=\"https://github.com/opencovid19-fr\">France</a>, <a href=\"https://github.com/CSSEGISandData/COVID-19\">others</a>. &copy;&nbsp;DataWorks LLC 2020") )
+            tags$p( HTML("This tool is provided by <a href=\"https://dataworks.consulting\">DataWorks LLC</a> as is, without any implied fitness for any purpose. It may provide inaccurate information. DataWorks LLC and its representatives are not liable for any damage that may derive from the use of this tool. Data sources: <a href=\"https://github.com/pcm-dpc/COVID-19\">Italy</a>, <a href=\"https://github.com/opencovid19-fr\">France</a>, <a href=\"https://github.com/datadista/datasets/tree/master/COVID%2019\">Spain</a>, <a href=\"https://github.com/CSSEGISandData/COVID-19\">others</a>. &copy;&nbsp;DataWorks LLC 2020") )
         )
     })
     
