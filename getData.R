@@ -91,4 +91,39 @@ fr$Day <- as.Date( fr$Day )
 covid <- covid[ ! Region=="France" ]
 covid <- rbind( covid, fr )
 
+## Spanish data
+sp.names <- c(
+    casos="Confirmed",
+    fallecidos="Fatalities",
+    uci="In ICU"
+)
+sp <- NULL
+for( sp.what in names(sp.names) ) {
+    dt <- fread(paste0("https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_",sp.what,".csv"))
+    dt <- melt( dt, id.vars="CCAA" )
+    dt <- dt[ variable!="cod_ine" ]
+    setnames(
+        dt,
+        c("CCAA","variable","value"),
+        c("Subregion","Day","Count")
+    )
+    dt[ Subregion=="Total", Subregion := "All" ]
+    dt[ , Region := "Spain" ]
+    dt[ , What := sp.names[[sp.what]] ]
+    sp <- rbind( sp, dt )
+}
+## normalize region names
+sp[ grep("Andaluc",Subregion), Subregion := "Andalucía" ]
+sp[ grep("Arag",Subregion), Subregion := "Aragón" ]
+sp[ grep("Castilla",Subregion), Subregion := "Castilla y León" ]
+sp[ grep("Catalu",Subregion), Subregion := "Cataluña" ]
+sp[ grep("Vasco",Subregion), Subregion := "País Vasco" ]
+
+sp$Lat <- sp$Long <- NA
+
+days <- sp[ Subregion=="All", Day ]
+
+covid <- covid[ ! (Region=="Spain" & Subregion=="All" & Day %in% days) ]
+covid <- rbind( covid, sp )
+
 fwrite( covid, "covid.csv" )
