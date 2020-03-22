@@ -482,7 +482,7 @@ server <- function( input, output, session ) {
             if( !is.null( sessionData$buildModel$InProgress ) ) {
                 with( sessionData$buildModel, points( Last, LastCount, pch=1, cex=2 ) )
                 fit <- sessionData$buildModel$InProgress
-                exp.plot( fit, add=TRUE, col="gray", model=TRUE, data=FALSE )
+                exp.plot( fit, add=TRUE, col="gray", model=TRUE, data=FALSE, confint=TRUE )
             }
         }
 

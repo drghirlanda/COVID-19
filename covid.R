@@ -171,7 +171,8 @@ exp.plot <- function( fit.out, add=FALSE, npred=0, col=1, model=TRUE, data=TRUE,
         pred.count <- 2 ^ pred.count
         pred.count2 <- predict(
             fit.out$fit,
-            newdata=data.frame(Day=pred.days2)
+            newdata=data.frame(Day=pred.days2),
+            interval="confidence"
         )
         pred.count2 <- 2 ^ pred.count2
     } else {
@@ -195,15 +196,21 @@ exp.plot <- function( fit.out, add=FALSE, npred=0, col=1, model=TRUE, data=TRUE,
     }
     if( model==TRUE & sum( ! is.na( pred.count ) ) > 0 ) {
         lines( pred.days, pred.count[,1], col=col )
+        lines( pred.days2, pred.count2[,1], col=col, lty=3 )
         if( confint ) {
             polygon(
                 c(pred.days,rev(pred.days)),
                 c(pred.count[,3],rev(pred.count[,2])),
+                col=adjustcolor( col, alpha=.15 ),
+                border=NA
+            )
+            polygon(
+                c(pred.days2,rev(pred.days2)),
+                c(pred.count2[,3],rev(pred.count2[,2])),
                 col=adjustcolor( col, alpha=.1 ),
                 border=NA
             )
         }
-        lines( pred.days2, pred.count2, col=col, lty=3 )
     }
     data.table(
         Day=as.Date( pred.days ),
