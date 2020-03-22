@@ -76,6 +76,11 @@ ui <- fluidPage(
                 label="Log Scale",
                 value=TRUE
             ),
+            checkboxInput(  
+                inputId="checkboxCI",
+                label="95% Confidence Interval",
+                value=FALSE
+            ),
             width=3
         ),
         mainPanel(
@@ -421,7 +426,14 @@ server <- function( input, output, session ) {
         ## add fits
         for( id in names( sessionData$fits ) ) {
             fit <- sessionData$fits[[ id ]]
-            pp <- exp.plot( fit, add=TRUE, col=i, model=TRUE, data=FALSE )
+            pp <- exp.plot(
+                fit,
+                add=TRUE,
+                col=i,
+                model=TRUE,
+                data=FALSE,
+                confint=input$checkboxCI
+            )
             subregion <- fit$dt$Subregion[1]
             if( subregion == "All" ) {
                 subregion <- ""

@@ -157,7 +157,7 @@ exp.fit <- function( dt, min.count=1 ) {
     )
 }
 
-exp.plot <- function( fit.out, add=FALSE, npred=0, col=1, model=TRUE, data=TRUE ) {
+exp.plot <- function( fit.out, add=FALSE, npred=0, col=1, model=TRUE, data=TRUE, confint=FALSE ) {
     first.day <- min( fit.out$dt$Day )
     last.day <- max( fit.out$dt$Day )
     pred.days <- as.Date( first.day : (last.day + npred) )
@@ -165,7 +165,8 @@ exp.plot <- function( fit.out, add=FALSE, npred=0, col=1, model=TRUE, data=TRUE 
     if( ! is.null( fit.out$fit ) ) {
         pred.count <- predict(
             fit.out$fit,
-            newdata=data.frame(Day=pred.days)
+            newdata=data.frame(Day=pred.days),
+            interval="confidence"
         )
         pred.count <- 2 ^ pred.count
         pred.count2 <- predict(
@@ -193,12 +194,20 @@ exp.plot <- function( fit.out, add=FALSE, npred=0, col=1, model=TRUE, data=TRUE 
         fit.out$dt[, points( Count ~ Day, pch=16, col=col ) ]
     }
     if( model==TRUE & sum( ! is.na( pred.count ) ) > 0 ) {
-        lines( pred.days, pred.count, col=col )
+        lines( pred.days, pred.count[,1], col=col )
+        if( confint ) {
+            polygon(
+                c(pred.days,rev(pred.days)),
+                c(pred.count[,3],rev(pred.count[,2])),
+                col=adjustcolor( col, alpha=.1 ),
+                border=NA
+            )
+        }
         lines( pred.days2, pred.count2, col=col, lty=3 )
     }
     data.table(
         Day=as.Date( pred.days ),
-        Count=pred.count
+        Count=pred.count[,1]
     )
 }
 
