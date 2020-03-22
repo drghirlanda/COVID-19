@@ -6,7 +6,7 @@ source("covid.R")
 
 ## jhu csse data
 confirmed <- load.jhu.csse.data("Confirmed")
-confirmed$What <- "New Known Cases"
+confirmed$What <- "Confirmed Cases"
 deaths <- load.jhu.csse.data("Deaths")
 deaths$What <- "Fatalities"
 
@@ -28,7 +28,7 @@ italy <- rbind( italy, italy.reg )
 setnames(
     italy,
     c("data","ricoverati_con_sintomi","terapia_intensiva","deceduti","totale_casi"),
-    c("Day","Hospital Admissions","ICU Admissions","Fatalities","New Known Cases")
+    c("Day","In Hospital","In ICU","Fatalities","Confirmed Cases")
 )
 
 ## retain day, drop time:
@@ -73,7 +73,7 @@ fr <- fr[, .(Subregion,Region,Day,cas_confirmes,deces) ]
 
 fr.c <- fr[, .(Subregion,Region,Day,cas_confirmes) ]
 setnames( fr.c, "cas_confirmes", "Count" )
-fr.c$What <- "New Known Cases"
+fr.c$What <- "Confirmed Cases"
 fr.d <- fr[, .(Subregion,Region,Day,deces) ]
 setnames( fr.d, "deces", "Count" )
 fr.d$What <- "Fatalities"
@@ -114,9 +114,9 @@ spain.date <- function(d) {
 }
 
 sp.names <- c(
-    casos="New Known Cases",
+    casos="Confirmed Cases",
     fallecidos="Fatalities",
-    uci="ICU Admissions"
+    uci="In ICU"
 )
 sp <- NULL
 for( sp.what in names(sp.names) ) {
