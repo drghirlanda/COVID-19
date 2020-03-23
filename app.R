@@ -1,10 +1,12 @@
 library(shiny)
 library(data.table)
 library(zoo)
-
+library(shinyjs)
 source("covid.R")
 
 covid <- load.covid.data()
+events <- fread( "events.csv" )
+events$Day <- as.Date( events$Day )
 
 ## some initial values for selectInputs:
 sorted.regions <- covid.sorted.regions( covid )
@@ -26,7 +28,7 @@ initial.end <- covid[
 ]
 
 ui <- fluidPage(
-    titlePanel( HTML("COVID-19: Understanding Trends - Instructions are <a target=\"_blank\" href=\"https://dataworks.consulting/covid-19\">here</a>") ),
+    useShinyjs(),
     sidebarLayout(
         sidebarPanel(
             selectInput(
@@ -81,17 +83,24 @@ ui <- fluidPage(
                 label="95% Confidence Interval",
                 value=FALSE
             ),
+            checkboxInput(  
+                inputId="checkboxEvents",
+                label="Earliest Effects of Measures",
+                value=FALSE
+            ),
             width=3
         ),
         mainPanel(
+            titlePanel( HTML("COVID-19: Understanding Trends - Instructions are <a target=\"_blank\" href=\"https://dataworks.consulting/covid-19\">here</a>") ),
             uiOutput( outputId="info" ),
             plotOutput( outputId="plot", click="plot_click", hover=hoverOpts(id="plot_hover",delay=250,delayType="throttle") ),
+            uiOutput( outputId="appInfo" ),
             width=9
         )
-    ),
-    fluidRow(
-        column( 12, uiOutput( outputId="appInfo" ) )
-    )
+    )#,
+    #fluidRow(
+    #    column( 12, uiOutput( outputId="appInfo" ) )
+    #)
 )
 
 server <- function( input, output, session ) {
@@ -125,6 +134,20 @@ server <- function( input, output, session ) {
             inputId="selectSubregion",
             choices=sorted.subregions
         )
+    })
+
+    ## enable/disable events checkbox
+    observe({
+        if( nrow(
+            events[
+                Region==input$selectRegion &
+                Subregion==input$selectSubregion
+            ]
+        ) == 0 ) {
+            shinyjs::disable( id="checkboxEvents" )
+        } else {
+            shinyjs::enable( id="checkboxEvents" )
+        }
     })
 
     ## adjust data type choices to selected region and subregion
@@ -378,10 +401,10 @@ server <- function( input, output, session ) {
         xMin <- min( sessionData$plots$Day ) - 2
         xMax <- max( sessionData$plots$Day ) + 2
         
-        ## find yMax
-        yMax <- max( sessionData$plots$Count )
+        ## find yLim
+        yLim <- range( sessionData$plots$Count )
         ## leave room for model overshoot
-        yMax <- 2*yMax
+        yLim[2] <- 2*yLim[2]
         
         ## set logscale
         if( input$checkboxScale ) {
@@ -391,14 +414,15 @@ server <- function( input, output, session ) {
         }
         
         ## set the stage
-        par( las=1, oma=c(0,0,0,0), mar=c(4,5,0.5,0.5) )
+        par( las=1, oma=c(0,0,0,0), mar=c(4,5,2,0.5) )
+        options( "scipen"=20 )
         plot(
             as.Date( NA ),
             NA,
             xlab = "Day",
             ylab = "",
             xlim = c( xMin, xMax ),
-            ylim = c( 1, yMax ),
+            ylim = yLim,
             log  = logScale
         )
         grid( nx=NA, ny=NULL )
@@ -420,6 +444,34 @@ server <- function( input, output, session ) {
             }
             lg.text <- c( lg.text, lg.this )
             lg.col <- c( lg.col, i )
+            delay <- list(
+                "Confirmed Cases" = 5,
+                "In Hospital" = 11,
+                "In ICU" = 14,
+                "Fatalities" = 21
+            )
+            if( input$checkboxEvents ) {
+                events[
+                    Region==dt$Region[1] &
+                    Subregion==dt$Subregion[1],
+                    if( .N ) {
+                        abline(
+                            v=Day+delay[[ dt$What[1] ]],
+                            col=adjustcolor(i,alpha=0.5),
+                            lty=2
+                        )
+                        text( 
+                            Day+delay[[ dt$What[1] ]],
+                            rep(yLim[1],.N),
+                            Event,
+                            col=adjustcolor(i,alpha=.5),
+                            srt=45,
+                            adj=c(0.1,-0.2),
+                            xpd=TRUE
+                        )
+                    }
+                ]
+            }
             i <- i + 1
         } 
 
@@ -485,7 +537,7 @@ server <- function( input, output, session ) {
                 exp.plot( fit, add=TRUE, col="gray", model=TRUE, data=FALSE, confint=TRUE )
             }
         }
-
+        
     })
 
     output$info <- renderUI({
@@ -494,7 +546,7 @@ server <- function( input, output, session ) {
 
     output$appInfo <- renderUI({
         tagList(
-            tags$p( HTML("This tool is provided by <a href=\"https://dataworks.consulting\">DataWorks LLC</a> as is, without any implied fitness for any purpose. It may provide inaccurate information. DataWorks LLC and its representatives are not liable for any damage that may derive from the use of this tool. Data sources: <a href=\"https://github.com/pcm-dpc/COVID-19\">Italy</a>, <a href=\"https://github.com/opencovid19-fr\">France</a>, <a href=\"https://github.com/datadista/datasets/tree/master/COVID%2019\">Spain</a>, <a href=\"https://github.com/CSSEGISandData/COVID-19\">others</a>. &copy;&nbsp;DataWorks LLC 2020") )
+            tags$p( HTML("This tool is provided by <a href=\"https://dataworks.consulting\">DataWorks LLC</a> without any implied fitness for any purpose. It may provide inaccurate information. DataWorks LLC is not liable for any damage that may derive from the use of this tool. Data sources: <a href=\"https://github.com/pcm-dpc/COVID-19\">Italy</a>, <a href=\"https://github.com/opencovid19-fr\">France</a>, <a href=\"https://github.com/datadista/datasets/tree/master/COVID%2019\">Spain</a>, <a href=\"https://github.com/CSSEGISandData/COVID-19\">others</a>. &copy;&nbsp;DataWorks LLC 2020") )
         )
     })
     
