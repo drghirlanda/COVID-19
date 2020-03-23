@@ -94,6 +94,16 @@ ui <- fluidPage(
             titlePanel( HTML("COVID-19: Understanding Trends - Instructions are <a target=\"_blank\" href=\"https://dataworks.consulting/covid-19\">here</a>") ),
             uiOutput( outputId="info" ),
             plotOutput( outputId="plot", click="plot_click", hover=hoverOpts(id="plot_hover",delay=250,delayType="throttle") ),
+            HTML( "Download:&nbsp;" ),
+            downloadLink(
+                outputId="downloadAllData",
+                label="All Data"
+            ),
+            HTML( "&nbsp;" ),
+            hidden( downloadLink(
+                outputId="downloadGraphedData",
+                label="Graphed Data"
+            ) ),
             uiOutput( outputId="appInfo" ),
             width=9
         )
@@ -123,6 +133,15 @@ server <- function( input, output, session ) {
         buildModel=NULL
     )
     
+    ## enable graph data download
+    observe({
+        if( is.null( sessionData$plots ) ) {
+            shinyjs::hide( id="downloadGraphedData", anim=TRUE, animType="fade" )
+        } else {
+            shinyjs::show( id="downloadGraphedData", anim=TRUE, animType="fade" )
+        }
+    })
+
     ## adjust subregion selectInput to selected region
     observe({
         sorted.subregions <- covid.sorted.subregions(
@@ -136,7 +155,7 @@ server <- function( input, output, session ) {
         )
     })
 
-    ## enable/disable events checkbox
+    ## show/hide events checkbox
     observe({
         if( nrow(
             events[
@@ -144,9 +163,9 @@ server <- function( input, output, session ) {
                 Subregion==input$selectSubregion
             ]
         ) == 0 ) {
-            shinyjs::disable( id="checkboxEvents" )
+            shinyjs::hide( id="checkboxEvents", anim=TRUE, animType="fade" )
         } else {
-            shinyjs::enable( id="checkboxEvents" )
+            shinyjs::show( id="checkboxEvents", anim=TRUE, animType="fade" )
         }
     })
 
@@ -544,11 +563,27 @@ server <- function( input, output, session ) {
         tags$p( "Messages will appear here", style="color: red; margin-top: 20px" )
     })
 
+    output$downloadGraphedData <- downloadHandler(
+        filename = function() {
+            "covid-partial-data.csv"
+        },
+        content = function(file) {
+            fwrite( sessionData$plots, file )
+        }
+    )
+    
+    output$downloadAllData <- downloadHandler(
+        filename = function() {
+            "covid.csv"
+        },
+        content = function(file) {
+            fwrite( covid, file )
+        }
+    )
     output$appInfo <- renderUI({
-        tagList(
-            tags$p( HTML("This tool is provided by <a href=\"https://dataworks.consulting\">DataWorks LLC</a> without any implied fitness for any purpose. It may provide inaccurate information. DataWorks LLC is not liable for any damage that may derive from the use of this tool. Data sources: <a href=\"https://github.com/pcm-dpc/COVID-19\">Italy</a>, <a href=\"https://github.com/opencovid19-fr\">France</a>, <a href=\"https://github.com/datadista/datasets/tree/master/COVID%2019\">Spain</a>, <a href=\"https://github.com/CSSEGISandData/COVID-19\">others</a>. &copy;&nbsp;DataWorks LLC 2020") )
-        )
+        HTML("This tool is provided by <a href=\"https://dataworks.consulting\">DataWorks LLC</a> without any implied fitness for any purpose. It may provide inaccurate information. DataWorks LLC is not liable for any damage that may derive from the use of this tool. Data sources: <a href=\"https://github.com/pcm-dpc/COVID-19\">Italy</a>, <a href=\"https://github.com/opencovid19-fr\">France</a>, <a href=\"https://github.com/datadista/datasets/tree/master/COVID%2019\">Spain</a>, <a href=\"https://github.com/CSSEGISandData/COVID-19\">others</a>. &copy;&nbsp;DataWorks LLC 2020")
     })
+
     
 }
 
