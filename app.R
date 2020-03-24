@@ -455,7 +455,7 @@ server <- function( input, output, session ) {
         for( id in plotNames ) {
             dt <- sessionData$plots[ Id==id ]
             points( dt$Day, dt$Count, pch=16, col=i )
-            lg.this <- paste( dt$Region[1], dt$What[1] )
+            lg.this <- paste( dt$Whatp[1], dt$Region[1] )
             if( dt$Subregion[1] != "All" ) {
                 lg.this <- paste(
                     lg.this, dt$Subregion[1], sep="/"
@@ -472,7 +472,7 @@ server <- function( input, output, session ) {
             if( input$checkboxEvents ) {
                 events[
                     Region==dt$Region[1] &
-                    Subregion==dt$Subregion[1],
+                    (Subregion==dt$Subregion[1] | Subregion=="All"),
                     if( .N ) {
                         abline(
                             v=Day+delay[[ dt$What[1] ]],
