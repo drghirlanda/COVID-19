@@ -1,6 +1,6 @@
 ## assemble data set from various sources 
 library(data.table)
-dummy <- lapply( dir("R",full.names=TRUE), source )
+dummy <- lapply( dir("R",pattern="R$",full.names=TRUE), source )
 
 ## global data
 
@@ -137,25 +137,6 @@ covid <- rbind( covid, fr )
 
 ## Spanish data
 
-## helper function for nasty date format
-spain.date <- function(d) {
-    as.Date(
-        unlist(
-            lapply(
-                strsplit( as.character(d), "-" ),
-                function(x) {
-                    y <- paste0("20",x[3],"-")
-                    y <- paste0(y,x[2],"-")
-                    if( nchar(x[1]) == 1 ) {
-                        y <- paste0(y,"0")
-                    }
-                    paste0( y, x[1] )
-                }
-            )
-        )
-    )
-}
-
 sp.names <- c(
     casos="Confirmed Cases",
     fallecidos="Fatalities",
@@ -183,8 +164,6 @@ sp[ grep("Arag",Subregion), Subregion := "Aragon" ]
 sp[ grep("Castilla",Subregion), Subregion := "Castilla y Leon" ]
 sp[ grep("Catalu",Subregion), Subregion := "Cataluna" ]
 sp[ grep("Vasco",Subregion), Subregion := "Pais Vasco" ]
-
-sp$Day <- spain.date( sp$Day )
 
 days <- sp[ Subregion=="All", Day ]
 
