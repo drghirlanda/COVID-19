@@ -160,7 +160,7 @@ server <- function( input, output, session ) {
     observe({
         if( nrow(
             events[
-                Region==input$selectRegion &
+                Region==input$selectRegion |
                 Subregion==input$selectSubregion
             ]
         ) == 0 ) {
