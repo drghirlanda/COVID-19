@@ -2,7 +2,8 @@ library(shiny)
 library(data.table)
 library(zoo)
 library(shinyjs)
-source("covid.R")
+
+lapply( dir("R",full.names=TRUE), source )
 
 covid <- load.covid.data()
 events <- fread( "events.csv" )
@@ -581,7 +582,7 @@ server <- function( input, output, session ) {
         }
     )
     output$appInfo <- renderUI({
-        HTML("This tool is provided by <a href=\"https://dataworks.consulting\">DataWorks LLC</a> without any implied fitness for any purpose. It may provide inaccurate information. DataWorks LLC is not liable for any damage that may derive from the use of this tool. Data sources: <a href=\"https://github.com/pcm-dpc/COVID-19\">Italy</a>, <a href=\"https://github.com/opencovid19-fr\">France</a>, <a href=\"https://github.com/datadista/datasets/tree/master/COVID%2019\">Spain</a>, <a href=\"https://github.com/CSSEGISandData/COVID-19\">others</a>. &copy;&nbsp;DataWorks LLC 2020")
+        HTML("This tool is provided by <a href=\"https://dataworks.consulting\">DataWorks LLC</a> without any implied fitness for any purpose. It may provide inaccurate information. DataWorks LLC is not liable for any damage that may derive from the use of this tool. Data sources: <a href=\"https://github.com/pcm-dpc/COVID-19\">Italy</a>, <a href=\"https://github.com/opencovid19-fr\">France</a>, <a href=\"https://github.com/datadista/datasets/tree/master/COVID%2019\">Spain</a>, <a href=\"https://data.beta.nyc/dataset/covid-19-nys-nyc/resource/c52cc51d-3aac-44f3-8616-2c48e2a3faa4\">New York City</a>, <a href=\"https://data.humdata.org/dataset/novel-coronavirus-2019-ncov-cases\">others</a>. &copy;&nbsp;DataWorks LLC 2020")
     })
 
     

@@ -1,16 +1,62 @@
-##
-
+## assemble data set from various sources 
 library(data.table)
-library(zoo)
-source("covid.R")
+dummy <- lapply( dir("R",full.names=TRUE), source )
 
-## jhu csse data
-confirmed <- load.jhu.csse.data("Confirmed")
+## global data
+
+## ugly but correct
+confirmed <- fread("https://data.humdata.org/hxlproxy/data/download/time_series_covid19_confirmed_global_narrow.csv?dest=data_edit&filter01=explode&explode-header-att01=date&explode-value-att01=value&filter02=rename&rename-oldtag02=%23affected%2Bdate&rename-newtag02=%23date&rename-header02=Date&filter03=rename&rename-oldtag03=%23affected%2Bvalue&rename-newtag03=%23affected%2Binfected%2Bvalue%2Bnum&rename-header03=Value&filter04=clean&clean-date-tags04=%23date&filter05=sort&sort-tags05=%23date&sort-reverse05=on&filter06=sort&sort-tags06=%23country%2Bname%2C%23adm1%2Bname&tagger-match-all=on&tagger-default-tag=%23affected%2Blabel&tagger-01-header=province%2Fstate&tagger-01-tag=%23adm1%2Bname&tagger-02-header=country%2Fregion&tagger-02-tag=%23country%2Bname&tagger-03-header=lat&tagger-03-tag=%23geo%2Blat&tagger-04-header=long&tagger-04-tag=%23geo%2Blon&header-row=1&url=https%3A%2F%2Fraw.githubusercontent.com%2FCSSEGISandData%2FCOVID-19%2Fmaster%2Fcsse_covid_19_data%2Fcsse_covid_19_time_series%2Ftime_series_covid19_confirmed_global.csv")
 confirmed$What <- "Confirmed Cases"
-deaths <- load.jhu.csse.data("Deaths")
+
+deaths <- fread("https://data.humdata.org/hxlproxy/data/download/time_series_covid19_deaths_global_narrow.csv?dest=data_edit&filter01=explode&explode-header-att01=date&explode-value-att01=value&filter02=rename&rename-oldtag02=%23affected%2Bdate&rename-newtag02=%23date&rename-header02=Date&filter03=rename&rename-oldtag03=%23affected%2Bvalue&rename-newtag03=%23affected%2Binfected%2Bvalue%2Bnum&rename-header03=Value&filter04=clean&clean-date-tags04=%23date&filter05=sort&sort-tags05=%23date&sort-reverse05=on&filter06=sort&sort-tags06=%23country%2Bname%2C%23adm1%2Bname&tagger-match-all=on&tagger-default-tag=%23affected%2Blabel&tagger-01-header=province%2Fstate&tagger-01-tag=%23adm1%2Bname&tagger-02-header=country%2Fregion&tagger-02-tag=%23country%2Bname&tagger-03-header=lat&tagger-03-tag=%23geo%2Blat&tagger-04-header=long&tagger-04-tag=%23geo%2Blon&header-row=1&url=https%3A%2F%2Fraw.githubusercontent.com%2FCSSEGISandData%2FCOVID-19%2Fmaster%2Fcsse_covid_19_data%2Fcsse_covid_19_time_series%2Ftime_series_covid19_deaths_global.csv" )
 deaths$What <- "Fatalities"
 
 covid <- rbind( confirmed, deaths )
+setnames(
+    covid,
+    c("Province/State","Country/Region","Date","Value"),
+    c("Subregion",     "Region",        "Day", "Count")
+)
+covid$Day <- as.Date( covid$Day, format="%F" )
+covid$Count <- as.numeric( covid$Count )
+## discard some header information
+covid <- covid[ ! grep("#",Region) ]
+## replace empty subregion with All
+covid[ Subregion=="", Subregion := "All" ]
+## discard Count==0
+covid <- covid[ Count>0 ]
+
+## discard Long and Lat
+covid[ , Long := NULL ]
+covid[ , Lat  := NULL ]
+
+## for US states, we use JHU data
+jhu <- load.jhu.data()
+data(state)
+us <- jhu[
+    Region=="US" &
+    Subregion %in%
+    c(
+        state.name,
+        "Puerto Rico",
+        "Virgin Islands, U.S.",
+        "United States Virgin Islands",
+        "Virgin Islands",
+        "American Samoa",
+        "Guam",
+        "Northern Mariana Islands",
+        "District of Columbia"
+        ) ]
+
+us[
+    Subregion %in%
+    c("Virgin Islands, U.S.", "United States Virgin Islands"),
+    Subregion := "Virgin Islands"
+]
+
+us <- us[ Count>0 ]
+
+covid <- rbind( covid, us )
 
 ## official Italian data
 ## national-level data
@@ -36,8 +82,6 @@ italy[, Day := as.Date( Day, format="%Y-%m-%d" ) ]
 
 italy <- melt( italy, id.vars=c("Subregion","Region","Day") )
 setnames( italy, c("variable","value"), c("What","Count") )
-
-italy$Lat <- italy$Long <- NA
 
 ## the official Italian data are more accurate but do not cover the
 ## whole date range in the jhu data. we keep the jhu data when no
@@ -86,7 +130,6 @@ fr <- fr[ complete.cases(fr) ]
 fr <- fr[, mean(Count), by=.(Subregion,Region,Day,What) ]
 setnames( fr, "V1", "Count" )
 
-fr$Lat <- fr$Long <- NA
 fr$Day <- as.Date( fr$Day )
 
 covid <- covid[ ! Region=="France" ]
@@ -143,11 +186,56 @@ sp[ grep("Vasco",Subregion), Subregion := "Pais Vasco" ]
 
 sp$Day <- spain.date( sp$Day )
 
-sp$Lat <- sp$Long <- NA
-
 days <- sp[ Subregion=="All", Day ]
 
 covid <- covid[ ! (Region=="Spain" & Day %in% days) ]
 covid <- rbind( covid, sp )
+
+## New York City data
+
+ny <- fread("https://docs.google.com/spreadsheets/d/1ixC6SxKs_4wYBPpsqwVAaihFEHj8SAN-3hIC2dluWrg/export?format=csv")
+ny <- melt( ny, id.vars="Location" )
+setnames( ny, c("variable","value"), c("Day","Count") )
+ny$Day <- as.Date( ny$Day, format="%F" )
+ny$Count <- as.numeric( sub( ",", "", ny$Count, fixed=TRUE ) )
+ny <- ny[, mean(Count), by=.(Location,Day) ]
+setnames( ny, "V1", "Count" )
+
+ny$What <- "Confirmed Cases"
+ny <- ny[ complete.cases(ny) ]
+ny$Region <- "US"
+
+nyc <- ny[ Location == "New York City" ]
+setnames( nyc, "Location", "Subregion" )
+nyc$Region <- "US"
+nyc <- rbind(
+    nyc,
+    data.table(
+        Subregion="New York City",
+        Region="US",
+        Count=192,
+        Day=as.Date("2020-03-24"),
+        What="Fatalities"
+    )
+)
+
+nyc$Count <- as.character( nyc$Count )
+
+covid <- rbind( covid, nyc )
+
+## ny totals
+ny <- ny [ ! grep( "Total", Location), sum(Count), by=.(Day,What) ]
+setnames( ny, "V1", "Count" )
+ny$Region <- "US"
+ny$Subregion <- "New York"
+
+covid <- covid[
+    ! (
+        Subregion=="New York" &
+        Day %in% unique(ny$Day) &
+        What %in% unique(ny$What)
+    )
+]
+covid <- rbind( covid, ny ) 
 
 fwrite( covid, "covid.csv" )

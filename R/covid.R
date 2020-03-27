@@ -1,111 +1,43 @@
 data(state)
 
-load.jhu.csse.data <- function( what ) {
-    ## read raw data file
-    file <- paste0(
-        "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-",
-        what,
-        ".csv"
-    )
-    dt <- fread( file )
+load.jhu.data <- function( what ) {
+    system( "svn checkout https://github.com/CSSEGISandData/COVID-19/trunk/csse_covid_19_data/csse_covid_19_daily_reports" )
 
-    ## shorter names
-    setnames(
-        dt,
-        c("Province/State","Country/Region"),
-        c("Subregion","Region")
-    )
+    jhu <- NULL
+    for( f in dir(path="csse_covid_19_daily_reports",pattern="csv$",full.names=TRUE) ) {
+        dt <- fread(f)
+        ## column names are not uniform, so we reduce them to a common
+        ## form by deleting things we don't use
+        for( x in c("Latitude","Longitude","FIPS","Admin2","Lat","Long_","Combined_Key","Active","Recovered") ) {
+            if( x %in% names(dt) ) {
+                dt[[ x ]] <- NULL
+            }
+        }
+        ## we change / and space to _ in column names
+        old.names <- names(dt)
+        new.names <- gsub( "/", "_", old.names, fixed=TRUE )
+        new.names <- gsub( " ", "_", new.names, fixed=TRUE )
+        setnames( dt, old.names, new.names )
+        jhu <- rbind( jhu, dt )
+    }
+
+    names(jhu) <- c("Subregion","Region","DayTime","Confirmed Cases","Fatalities") 
 
     ## there is extra whitespace in some cases
-    dt[, Subregion := trimws( Subregion ) ]
+    jhu[, Subregion := trimws( Subregion ) ]
 
-    ## transform to long form
-    dt <- melt( dt, id.vars=c("Subregion","Region","Lat","Long") )
-    setnames( dt, c("variable","value"), c("Day","Count") )
-
-    ## make sure Day is a date
-    dt$Day <- as.Date( dt$Day, format="%m/%d/%y" )
-
-    ## remove empty lines
-    dt <- dt[ Count>0 ]
+    ## very helpfully, dates are in several different formats...
+    jhu[ !grep("/",DayTime), Day := as.Date( DayTime ) ]
+    jhu[ is.na(Day), Day := as.Date( DayTime, format="%m/%d/%y" ) ]
+    jhu[, DayTime := NULL ]
     
-    ## The US data set has some inconsistencies and includes entries
-    ## for both parts of states (counties, parishes) and for whole
-    ## states. The former usually start earlier. Here we aggregate the
-    ## data.
-
-    us <- NULL
-    for( s in state.abb ) {
-        ## aggregate local data in this state 
-        dt.s1 <- dt[ Region=="US" ][
-            grep( paste0(", ", s, "$"), Subregion ),
-            .(
-                Region,
-                rep( state.name[ state.abb==s ], .N ),
-                mean( Lat ),
-                mean( Long ),
-                sum( Count, na.rm=TRUE )
-            ),
-            by=Day
-        ]
-        setnames(
-            dt.s1,
-            c("V2","V3","V4","V5"),
-            c("Subregion","Lat","Long","Count")
-        )
-        ## get state data
-        dt.s2 <- dt[ Region=="US" & Subregion==state.name[ state.abb==s ] ]
-        ## merge and average
-        dt.s <- rbind( dt.s1, dt.s2 )
-        dt.s <- dt.s[,
-                     .(
-                         mean(Lat),
-                         mean(Long),
-                         mean(Count, na.rm=TRUE)
-                     ),
-                     by=.(Day,Region,Subregion)
-                     ]
-        setnames(
-            dt.s,
-            c("V1","V2","V3"),
-            c("Lat","Long","Count")
-        )
-        ## delete old data
-        us <- rbind( us, dt.s )
-    }
-    ## remove old US data and add new
-    dt <- dt[ Region != "US" ]
-    dt <- rbind( dt, us )
+    jhu <- melt( us, id.vars=c("Region","Subregion","Day") )
+    setnames( jhu, c("variable","value"), c("What","Count") )
     
     ## an empty subregion means the total
-    dt[ Subregion=="", Subregion := "All" ]
+    jhu[ Subregion=="", Subregion := "All" ]
 
-    ## add All subregion if not present
-    for( r in unique(dt$Region) ) {
-        if( ! "All" %in% dt[Region==r,Subregion] ) {
-            all.dt <- dt[
-                Region==r,
-                .(
-                    "All",
-                    r,
-                    mean(Lat),
-                    mean(Long),
-                    sum(Count,na.rm=TRUE)
-                ),
-                by=Day
-            ]
-            setnames(
-                all.dt,
-                c("V1","r","V3","V4","V5"),
-                c("Subregion","Region","Lat","Long","Count")
-            )
-            dt <- rbind( dt, all.dt )
-        }
-    }
-
-    dt$What <- what
-
-    dt
+    jhu
 }    
 
 load.covid.data <- function() {

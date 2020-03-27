@@ -5,31 +5,27 @@ covid$Day <- as.Date( covid$Day )
 
 
 rollingEstimates <- function( dt, window ) {
+    dt <- dt[ Count>0 ]
     dayMin <- min( dt$Day ) + window
     dayMax <- max( dt$Day ) - window
     days <- dayMin : dayMax
     r <- rep( NA, length(days) )
-    count <- rep( NA, length(days) )
+    count <- dt[ Day %in% days, Count ]
     for( i in 1:length(days) ) {
         these.days <- ( days[i] - window ) : ( days[i] + window )
         this.dt <- dt[ Day %in% these.days ] 
-        print( as.Date( days[i] ) )
-        print( this.dt )
         if( nrow(this.dt)>=2*window+1 ) {
             fit.out <- exp.fit( this.dt )
             r[i] <- coef( fit.out$fit )[2]
-            count[i] <- dt[ Day==days[i], Count ]
         } else {
             r[i] <- NA
-            count[i] <- NA
         }
     }
-    x <- !is.na(r)
     data.table(
         Day=as.Date(days),
-        R=r[ x ],
-        T=1/r[x],
-        Count=count[x] )
+        R=r,
+        T=1/r,
+        Count=count )
 }
 
 rollingPlots <- function(
@@ -69,8 +65,13 @@ rollingPlots <- function(
         lines( f[[xVar]], f[[yVar]], col=i )
         i <<- i + 1
     })
+    if( yVar=="T" ) {
+        lg.pos <- "topleft"
+    } else {
+        lg.pos <- "bottomleft"
+    }
     legend(
-        "bottomleft",
+        lg.pos,
         legend=names(fits),
         lty=1,
         pch=16,
@@ -87,5 +88,13 @@ italy <- covid[
     Day >= "2020-02-25"
 ]
 
-rollingPlots( italy, window=1, xVar="Day", yVar="T" )
+rollingPlots( italy, window=3, xVar="Day", yVar="T" )
+
+rollingPlots(
+    covid[Subregion=="Lombardia"&Day>="2020-02-25"],
+    window=3,
+    xVar="Day",
+    yVar="T"
+)
+
 
