@@ -2,14 +2,14 @@ load.italian.data <- function() {
     ## national-level data
     italy <- fread("https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-andamento-nazionale/dpc-covid19-ita-andamento-nazionale.csv")
     italy <- italy[, .(data,ricoverati_con_sintomi,terapia_intensiva,deceduti,totale_casi) ]
-    italy$Region <- "Italy"
-    italy$Subregion <- "All"
+    italy$Reg1 <- "Italy"
+    italy$Reg2 <- "All"
 
     ## region-level data
     italy.reg <- fread("https://raw.githubusercontent.com/pcm-dpc/COVID-19/master/dati-regioni/dpc-covid19-ita-regioni.csv")
     italy.reg <- italy.reg[, .(denominazione_regione,data,ricoverati_con_sintomi,terapia_intensiva,deceduti,totale_casi) ]
-    italy.reg$Region <- "Italy"
-    setnames( italy.reg, "denominazione_regione", "Subregion" )
+    italy.reg$Reg1 <- "Italy"
+    setnames( italy.reg, "denominazione_regione", "Reg2" )
 
     italy <- rbind( italy, italy.reg )
     setnames(
@@ -21,8 +21,9 @@ load.italian.data <- function() {
     ## retain day, drop time:
     italy[, Day := as.Date( Day, format="%Y-%m-%d" ) ]
 
-    italy <- melt( italy, id.vars=c("Subregion","Region","Day") )
+    italy <- melt( italy, id.vars=c("Reg2","Reg1","Day") )
     setnames( italy, c("variable","value"), c("What","Count") )
 
+    italy$Reg3 <- "All"
     italy
 }

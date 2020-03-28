@@ -13,13 +13,13 @@ load.ny.nyc.data <- function() {
     ny$Region <- "US"
     
     nyc <- ny[ Location == "New York City" ]
-    setnames( nyc, "Location", "Subregion" )
-    nyc$Region <- "US"
+    setnames( nyc, "Location", "Reg2" )
+    nyc$Reg1 <- "US"
     nyc <- rbind(
         nyc,
         data.table(
-            Subregion="New York City",
-            Region="US",
+            Reg2="New York City",
+            Reg1="US",
             Count=192,
             Day=as.Date("2020-03-24"),
             What="Fatalities"
@@ -31,8 +31,11 @@ load.ny.nyc.data <- function() {
     ## ny totals
     ny <- ny [ ! grep( "Total", Location), sum(Count), by=.(Day,What) ]
     setnames( ny, "V1", "Count" )
-    ny$Region <- "US"
-    ny$Subregion <- "New York"
+    ny$Reg1 <- "US"
+    ny$Reg2 <- "New York"
+    
+    ny.nyc <- rbind( ny, nyc )
+    ny.nyc$Reg3 <- "All"
 
-    rbind( ny, nyc )
+    ny.nyc
 }

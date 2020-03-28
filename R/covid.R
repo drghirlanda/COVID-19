@@ -6,33 +6,22 @@ load.covid.data <- function() {
     covid
 }
 
-covid.sorted.regions <- function( covid ) {
-    covid[
-        What=="Fatalities",
-        max(Count,na.rm=TRUE),
-        by=Region
-    ][
-        order(-V1),
-        Region
-    ]
+reg2.label <-function( reg1 ) {
+    if( reg1=="US" ) {
+        return( "State" )
+    } else if( reg1=="Canada" ) {
+        return( "Province" )
+    } else {
+        return( "Region" )
+    }
 }
 
-covid.sorted.subregions <- function( covid, region ) {
-    covid[
-        What=="Fatalities" &
-        Region == region,
-        max(Count,na.rm=TRUE),
-        by=Subregion
-    ][
-        order(-V1),
-        Subregion
-    ]
-}
-
-get.totals <- function( dt ) {
-    dt.tot <- dt[, sum(Count, na.rm=TRUE), by=Day ]
-    setnames( dt.tot, "V1", "Count" )
-    dt.tot
+reg3.label <-function( reg1 ) {
+    if( reg1=="US" ) {
+        return( "County" )
+    } else {
+        return( "Subregion" )
+    }
 }
 
 exp.fit <- function( dt, min.count=1 ) {

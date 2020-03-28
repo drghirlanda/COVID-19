@@ -4,16 +4,17 @@ load.us.states <- function() {
     setnames(
         us,
         c("date","state","cases","deaths"),
-        c("Day","Subregion","Confirmed Cases","Fatalities")
+        c("Day","Reg2","Confirmed Cases","Fatalities")
     )
-    us <- melt( us, id.vars=c("Day","Subregion") )
+    us <- melt( us, id.vars=c("Day","Reg2") )
     setnames(
         us,
         c("variable","value"),
         c("What","Count")
     )
     us <- us[ Count>0 ]
-    us$Region <- "US"
+    us$Reg1 <- "US"
+    us$Reg3 <- "All"
     us$Day <- as.Date( us$Day )
     us
 }

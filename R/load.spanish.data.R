@@ -13,21 +13,22 @@ load.spanish.data <- function() {
         setnames(
             dt,
             c("CCAA","variable","value"),
-            c("Subregion","Day","Count")
+            c("Reg2","Day","Count")
         )
-        dt[ Subregion=="Total", Subregion := "All" ]
-        dt[ , Region := "Spain" ]
+        dt[ Reg2=="Total", Reg2 := "All" ]
+        dt[ , Reg1 := "Spain" ]
         dt[ , What := sp.names[[sp.what]] ]
         dt$Day <- as.Date( dt$Day )
         sp <- rbind( sp, dt )
     }
     
     ## normalize region names
-    sp[ grep("Andaluc",Subregion), Subregion := "Andalucia" ]
-    sp[ grep("Arag",Subregion), Subregion := "Aragon" ]
-    sp[ grep("Castilla",Subregion), Subregion := "Castilla y Leon" ]
-    sp[ grep("Catalu",Subregion), Subregion := "Cataluna" ]
-    sp[ grep("Vasco",Subregion), Subregion := "Pais Vasco" ]
-    
+    sp[ grep("Andaluc",Reg2), Reg2 := "Andalucia" ]
+    sp[ grep("Arag",Reg2), Reg2 := "Aragon" ]
+    sp[ grep("Castilla",Reg2), Reg2 := "Castilla y Leon" ]
+    sp[ grep("Catalu",Reg2), Reg2 := "Cataluna" ]
+    sp[ grep("Vasco",Reg2), Reg2 := "Pais Vasco" ]
+
+    sp$Reg3 <- "All"
     sp
 }

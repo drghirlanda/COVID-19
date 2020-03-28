@@ -10,20 +10,34 @@ load.humdata.data <- function() {
     setnames(
         covid,
         c("Province/State","Country/Region","Date","Value"),
-        c("Subregion",     "Region",        "Day", "Count")
+        c("Reg2",     "Reg1",        "Day", "Count")
     )
     covid$Day <- as.Date( covid$Day, format="%F" )
     covid$Count <- as.numeric( covid$Count )
     ## discard some header information
-    covid <- covid[ ! grep("#",Region) ]
+    covid <- covid[ ! grep("#",Reg1) ]
     ## replace empty subregion with All
-    covid[ Subregion=="", Subregion := "All" ]
+    covid[ Reg2=="", Reg2 := "All" ]
     ## discard Count==0
     covid <- covid[ Count>0 ]
-    
+
     ## discard Long and Lat
     covid[ , Long := NULL ]
     covid[ , Lat  := NULL ]
 
+    ## add Reg2 := All to Reg1 entities that lack it
+    no.all <- covid[ , sum(Reg2=="All"), by=Reg1 ][ V1==0, Reg1 ]
+    no.all.sums <- covid[
+        Reg1 %in% no.all,
+        sum(Count),
+        by=.(Reg1,Day,What)
+    ]
+    setnames( no.all.sums, "V1", "Count" )
+    no.all.sums$Reg2 <- "All"
+
+    covid <- rbind( covid, no.all.sums )
+    
+    covid$Reg3 <- "All"
+    
     covid
 }

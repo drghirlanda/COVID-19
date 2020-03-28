@@ -21,10 +21,10 @@ load.jhu.data <- function() {
         jhu <- rbind( jhu, dt )
     }
 
-    names(jhu) <- c("Subregion","Region","DayTime","Confirmed Cases","Fatalities") 
+    names(jhu) <- c("Reg2","Reg1","DayTime","Confirmed Cases","Fatalities") 
 
     ## there is extra whitespace in some cases
-    jhu[, Subregion := trimws( Subregion ) ]
+    jhu[, Reg2 := trimws( Reg1 ) ]
 
     ## very helpfully, dates are in several different formats...
     jhu[ !grep("/",DayTime), Day := as.Date( DayTime ) ]
@@ -32,10 +32,11 @@ load.jhu.data <- function() {
     jhu[, DayTime := NULL ]
 
     ## an empty subregion means the total
-    jhu[ Subregion=="", Subregion := "All" ]
+    jhu[ Reg2=="", Reg2 := "All" ]
 
-    jhu <- melt( jhu, id.vars=c("Subregion","Region","Day") )
+    jhu <- melt( jhu, id.vars=c("Reg2","Reg1","Day") )
     setnames( jhu, c("variable","value"), c("What","Count") )
 
+    jhu$Reg3 <- "All"
     jhu
 }    
