@@ -40,7 +40,7 @@ ui <- fluidPage(
             ),
             selectInput(
                 inputId="selectRegion",
-                label="Region/Country",
+                label="Country",
                 choices=sorted.regions
             ),
             selectInput(
@@ -48,6 +48,11 @@ ui <- fluidPage(
                 label="Province/State",
                 choices=sorted.subregions
             ),
+            ## hidden( selectInput(
+            ##     inputId="selectSubsubregion",
+            ##     label="County",
+            ##     choices=sorted.subsubregions
+            ## ) ),
             dateRangeInput(
                 inputId="selectDays",
                 label="Days",
@@ -582,7 +587,7 @@ server <- function( input, output, session ) {
         }
     )
     output$appInfo <- renderUI({
-        HTML("This tool is provided as is, without any implied fitness for any purpose. It may provide inaccurate information. DataWorks LLC is not liable for any damage that may derive from  using this tool. Data sources: <a href=\"https://github.com/pcm-dpc/COVID-19\">Italy</a>, <a href=\"https://github.com/opencovid19-fr\">France</a>, <a href=\"https://github.com/datadista/datasets/tree/master/COVID%2019\">Spain</a>, <a href=\"https://data.beta.nyc/dataset/covid-19-nys-nyc/resource/c52cc51d-3aac-44f3-8616-2c48e2a3faa4\">New York City</a>, <a href=\"https://github.com/CSSEGISandData/COVID-19\">US States and Territories</a>, <a href=\"https://data.humdata.org/dataset/novel-coronavirus-2019-ncov-cases\">others</a>. &copy;&nbsp;<a href=\"https://dataworks.consulting\">DataWorks LLC</a> 2020")
+        HTML("This tool is provided as is, without any implied fitness for any purpose; it may provide inaccurate information. DataWorks LLC is not liable for any damage that may derive from its use. Data sources: <a href=\"https://github.com/pcm-dpc/COVID-19\">Italy</a>, <a href=\"https://github.com/opencovid19-fr\">France</a>, <a href=\"https://github.com/datadista/datasets/tree/master/COVID%2019\">Spain</a>, <a href=\"https://github.com/nytimes/covid-19-data\">US</a> (courtesy The New York Times), <a href=\"https://data.humdata.org/dataset/novel-coronavirus-2019-ncov-cases\">others</a>. &copy;&nbsp;<a href=\"https://dataworks.consulting\">DataWorks LLC</a> 2020")
     })
 
     

@@ -1,3 +1,2 @@
-- Highlight second point during model selection 
-- Improve precision of point selection
-- Update instructions
+- Refactor data acquisition functions in the same way as load.jhu.data(), for a more transparent getData.R script
+- Download humdata data in wide format for faster download

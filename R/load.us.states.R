@@ -1,0 +1,19 @@
+load.us.states <- function() {
+    us <- fread("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv")
+    us[, fips := NULL ]
+    setnames(
+        us,
+        c("date","state","cases","deaths"),
+        c("Day","Subregion","Confirmed Cases","Fatalities")
+    )
+    us <- melt( us, id.vars=c("Day","Subregion") )
+    setnames(
+        us,
+        c("variable","value"),
+        c("What","Count")
+    )
+    us <- us[ Count>0 ]
+    us$Region <- "US"
+    us$Day <- as.Date( us$Day )
+    us
+}
