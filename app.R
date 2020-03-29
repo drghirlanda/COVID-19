@@ -22,7 +22,6 @@ initial.end <- covid[ initial.selector, max(Day) ]
 
 ui <- fluidPage(
     useShinyjs(),
-    HTML("<div class=\"powr-stripe-button\" id=\"ba9b2071_1585504344\"></div><script src=\"https://www.powr.io/powr.js?platform=embed\"></script>"),
     sidebarLayout(
         sidebarPanel(
             selectInput(
@@ -90,7 +89,9 @@ ui <- fluidPage(
             width=3
         ),
         mainPanel(
-            titlePanel( HTML("COVID-19: Understanding Trends - Instructions are <a target=\"_blank\" href=\"https://dataworks.consulting/covid-19\">here</a>") ),
+            titlePanel( HTML("COVID-19: Understanding Trends") ),
+            ## these are the help and donate buttons:
+            HTML( "<div style=\"position: fixed; top: 10px; right: 5px\"><a target=\"_blank\" href=\"https://dataworks.consulting/covid-19\" style=\"background-color: #5555bb; color: white; padding: 5px; margin: 5px; border-radius: 5px\">Help</a>&nbsp;<a style=\"background-color: #388838; color: white; padding: 5px; border-radius: 5px;\" taget=\"_blank\" href=\"https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=FHQ4DM53S2E2W&source=url\">Donate</a></div>" ),
             uiOutput( outputId="info" ),
             plotOutput( outputId="plot", click="plot_click", hover=hoverOpts(id="plot_hover",delay=250,delayType="throttle") ),
             HTML( "Download:&nbsp;" ),
