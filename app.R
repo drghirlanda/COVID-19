@@ -509,29 +509,32 @@ server <- function( input, output, session ) {
             lg.col <- c( lg.col, i )
             delay <- list(
                 "Confirmed Cases" = 5,
-                "In Hospital" = 11,
-                "In ICU" = 14,
-                "Fatalities" = 21
+                "In Hospital" = 9,
+                "In ICU" = 12,
+                "Fatalities" = 14
             )
             if( input$checkboxEvents ) {
                 events[
                     Reg1==dt$Reg1[1] &
                     (Reg2==dt$Reg2[1] | Reg2=="All"),
-                    if( .N ) {
-                        abline(
-                            v=Day+delay[[ dt$What[1] ]],
-                            col=adjustcolor(i,alpha=0.5),
-                            lty=2
-                        )
-                        text( 
-                            Day+delay[[ dt$What[1] ]],
-                            rep(yLim[1],.N),
-                            Event,
-                            col=adjustcolor(i,alpha=.5),
-                            srt=45,
-                            adj=c(0.1,-0.2),
+                    {
+                        d <- delay[[ dt$What[1] ]]
+                        if( .N ) {
+                            abline(
+                                v=Day+d,
+                                col=adjustcolor(i,alpha=0.5),
+                                lty=2
+                            )
+                            text( 
+                                Day+d,
+                                rep(yLim[1],.N),
+                                paste0(Event,"+",d),
+                                col=adjustcolor(i,alpha=.5),
+                                srt=45,
+                                adj=c(0.1,-0.2),
                             xpd=TRUE
-                        )
+                            )
+                        }
                     }
                 ]
             }
