@@ -509,9 +509,9 @@ server <- function( input, output, session ) {
             lg.col <- c( lg.col, i )
             delay <- list(
                 "Confirmed Cases" = 5,
-                "In Hospital" = 11,
-                "In ICU" = 14,
-                "Fatalities" = 21
+                "In Hospital" = 9,
+                "In ICU" = 12,
+                "Fatalities" = 14
             )
             if( input$checkboxEvents ) {
                 events[
