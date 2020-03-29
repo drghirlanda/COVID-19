@@ -21,7 +21,7 @@ load.humdata.data <- function() {
     covid <- melt( covid, id.vars=c("Reg1","Reg2","What") )
     setnames( covid, c("variable","value"), c("Day","Count") )
 
-    covid$Day <- as.Date( covid$Day, format="%F" )
+    covid$Day <- as.Date( covid$Day, format="%m/%d/%y" )
     covid$Count <- as.numeric( covid$Count )
 
     ## replace empty subregion with All
