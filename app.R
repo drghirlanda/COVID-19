@@ -91,7 +91,7 @@ ui <- fluidPage(
         mainPanel(
             titlePanel( HTML("COVID-19: Understanding Trends") ),
             ## these are the help and donate buttons:
-            HTML( "<div style=\"position: fixed; top: 10px; right: 5px\"><a target=\"_blank\" href=\"https://dataworks.consulting/covid-19\" style=\"background-color: #5555bb; color: white; padding: 5px; margin: 5px; border-radius: 5px\">Help</a>&nbsp;<a style=\"background-color: #388838; color: white; padding: 5px; border-radius: 5px;\" taget=\"_blank\" href=\"https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=FHQ4DM53S2E2W&source=url\">Donate</a></div>" ),
+            HTML( "<div style=\"position: fixed; top: 10px; right: 5px\"><a target=\"_blank\" href=\"https://dataworks.consulting/covid-19\" style=\"background-color: #5555bb; color: white; padding: 5px; margin: 5px; border-radius: 5px\">Help</a>&nbsp;<a style=\"background-color: #388838; color: white; padding: 5px; border-radius: 5px;\" taget=\"_blank\" href=\"https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=FHQ4DM53S2E2W&source=url\">Support Development</a></div>" ),
             uiOutput( outputId="info" ),
             plotOutput( outputId="plot", click="plot_click", hover=hoverOpts(id="plot_hover",delay=250,delayType="throttle") ),
             HTML( "Download:&nbsp;" ),
