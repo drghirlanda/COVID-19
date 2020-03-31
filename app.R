@@ -326,7 +326,7 @@ server <- function( input, output, session ) {
                    ,
                     Count := Count - shift(Count,type="lead",fill=0)
                 ]
-                if( input$checkbosScale=="TRUE" ) {
+                if( input$checkboxScale=="TRUE" ) {
                     my.data <- my.data[ Count>0 ]
                 }
         }
@@ -538,10 +538,10 @@ server <- function( input, output, session ) {
             dt <- sessionData$plots[ Id==id ][ order(Day) ]
             lines( dt$Day, dt$Count, lty=1, lwd=0.75, col=adjustcolor(i,alpha=0.5) )
             points( dt$Day, dt$Count, pch=16, col=i )
-            lg.this <- paste( dt$Reg1[1], dt$Type[1], dt$What[1] )
+            lg.this <- dt$Reg1[1]
             if( dt$Reg2[1] != "All" ) {
                 lg.this <- paste(
-                    lg.this, dt$Reg2[1], sep="/"
+                    lg.this, dt$Reg2[1]
                 )
                 if( dt$Reg3[1] != "All" ) {
                 lg.this <- paste(
@@ -549,6 +549,7 @@ server <- function( input, output, session ) {
                 )
                 }
             }
+            lg.this <- paste( lg.this, dt$Type[1], dt$What[1] )
             lg.text <- c( lg.text, lg.this )
             lg.col <- c( lg.col, i )
             delay <- list(

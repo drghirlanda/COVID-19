@@ -24,6 +24,12 @@ load.italian.data <- function() {
     italy <- melt( italy, id.vars=c("Reg2","Reg1","Day") )
     setnames( italy, c("variable","value"), c("What","Count") )
 
+    no.lombardy <- italy[ ! Reg2 %in% c("All","Lombardia"), sum(Count), by=.(Day,Reg1,What) ]
+    setnames( no.lombardy, "V1", "Count" )
+    no.lombardy$Reg2 <- "Without Lombardia"
+    
+    italy <- rbind( italy, no.lombardy )
+    
     italy$Reg3 <- "All"
     italy
 }
