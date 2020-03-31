@@ -15,7 +15,7 @@ load.italian.data <- function() {
     setnames(
         italy,
         c("data","ricoverati_con_sintomi","terapia_intensiva","deceduti","totale_casi"),
-        c("Day","In Hospital","In ICU","Fatalities","Confirmed Cases")
+        c("Day","Hospitalizations","ICU admissions","Fatalities","Confirmed Cases")
     )
 
     ## retain day, drop time:

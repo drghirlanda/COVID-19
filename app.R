@@ -22,17 +22,29 @@ initial.end <- covid[ initial.selector, max(Day) ]
 
 ui <- fluidPage(
     useShinyjs(),
+    tags$style(HTML(paste(
+             "#buttonsType .control-label {display: none}",
+             ".control-label[for=\"selectReg2-selectized\"] {display: none}",
+             ".control-label[for=\"selectReg3-selectized\"] {display: none}"
+         ))),
     sidebarLayout(
         sidebarPanel(
             selectInput(
                 inputId="selectWhat",
-                label="Data Type",
+                label="What to plot?",
                 choices=initial.what,
                 selected=initial.what[1]
             ),
+            radioButtons(
+                inputId="buttonsType",
+                label="Type",
+                choices=c("Total","Daily"),
+                inline=TRUE,
+                selected="Total"
+            ),
             selectInput(
                 inputId="selectReg1",
-                label="Country",
+                label="Country / Region",
                 choices=unique( covid$Reg1 )
             ),
             selectInput(
@@ -93,7 +105,7 @@ ui <- fluidPage(
             ## these are the help and donate buttons:
             HTML( "<div style=\"position: fixed; top: 10px; right: 5px\"><a target=\"_blank\" href=\"https://dataworks.consulting/covid-19\" style=\"background-color: #5555bb; color: white; padding: 5px; margin: 5px; border-radius: 5px\">Help</a>&nbsp;<a style=\"background-color: #388838; color: white; padding: 5px; border-radius: 5px;\" taget=\"_blank\" href=\"https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=FHQ4DM53S2E2W&source=url\">Support Development</a></div>" ),
             uiOutput( outputId="info" ),
-            plotOutput( outputId="plot", click="plot_click", hover=hoverOpts(id="plot_hover",delay=250,delayType="throttle") ),
+            plotOutput( outputId="plot", click="plot_click", hover=hoverOpts(id="plot_hover",delay=400,delayType="throttle") ),
             HTML( "Download:&nbsp;" ),
             downloadLink(
                 outputId="downloadAllData",
@@ -131,7 +143,7 @@ server <- function( input, output, session ) {
         fits=list(),
         buildModel=NULL
     )
-    
+
     ## enable/disable graph data download
     observe({
         if( is.null( sessionData$plots ) ) {
@@ -257,8 +269,8 @@ server <- function( input, output, session ) {
     priority=-2
     )
 
-    pack.id <- function( r1, r2, r3, f, l, w ) {
-        paste( r1, r2, r3, f, l, w, sep="+" )
+    pack.id <- function( r1, r2, r3, f, l, w, t ) {
+        paste( r1, r2, r3, f, l, w, t, sep="+" )
     }
 
     unpack.id <- function( id ) {
@@ -285,7 +297,8 @@ server <- function( input, output, session ) {
         f <- input$selectDays[1]
         l <- input$selectDays[2]
         w <- isolate( input$selectWhat )
-
+        t <- input$buttonsType
+        
         if( is.na(f) | is.na(l) ) {
             uiMessage(
                 "Please select both start and end dates",
@@ -304,10 +317,24 @@ server <- function( input, output, session ) {
             Day  <= l
         ]
 
+        ## add data type (Total or Daily)
+        my.data$Type <- t
+        
+        ## plot day-to-day differences?
+        if( t == "Daily" ) {
+                my.data[
+                   ,
+                    Count := Count - shift(Count,type="lead",fill=0)
+                ]
+                if( input$checkbosScale=="TRUE" ) {
+                    my.data <- my.data[ Count>0 ]
+                }
+        }
+                        
         ## add Id and What identifiers
-        id <- pack.id( r1,r2,r3,f,l,w )
+        id <- pack.id( r1,r2,r3,f,l,w,t )
         my.data$Id <- id
-
+        
         ## add data to sessionData, if not already there
         if( ! my.data$Id[1] %in% unique(sessionData$plots$Id) ) {
             uiMessage( "Added data for", gsub( "+", " ", my.data$Id[1], fixed=TRUE ) )
@@ -347,6 +374,12 @@ server <- function( input, output, session ) {
             return()
         }
 
+        ## no model fitting on daily data (for now at least)
+        if( p$Type == "Daily" ) {
+            uiMessage( "Model fitting is not possible on daily data", err=TRUE )
+            return()
+        }
+        
         if( is.null( sessionData$buildModel ) ) {
             return()
         }
@@ -357,7 +390,8 @@ server <- function( input, output, session ) {
                                       Reg1==p$Reg1 &
                                       Reg2==p$Reg2 &
                                       Reg3==p$Reg3 &
-                                      What==p$What,
+                                      What==p$What &
+                                      Type==p$Type,
                                       max(Day)
                                   ]
             if( p$Day == maxDay ) {
@@ -369,7 +403,8 @@ server <- function( input, output, session ) {
             sessionData$buildModel$Reg2       <- p$Reg2
             sessionData$buildModel$Reg3       <- p$Reg3
             sessionData$buildModel$What       <- p$What
-            uiMessage( "First model point:", p$Reg1, p$Reg2, p$Reg3, p$What, p$Day, p$Count )
+            sessionData$buildModel$Type       <- p$Type
+            uiMessage( "First model point:", p$Reg1, p$Reg2, p$Reg3, p$Type, p$What, p$Day, p$Count )
         } else {
             ## this is the second model point: move the InProgress fit to the completed fits
             id <- pack.id(
@@ -378,7 +413,8 @@ server <- function( input, output, session ) {
                 sessionData$buildModel$Reg3,
                 sessionData$buildModel$First,
                 sessionData$buildModel$Last,
-                sessionData$buildModel$What
+                sessionData$buildModel$What,
+                sessionData$buildModel$Type
             )
             if( ! id %in% names(sessionData$fits) ) {
                 sessionData$fits[[ id ]] <- sessionData$buildModel$InProgress
@@ -400,7 +436,7 @@ server <- function( input, output, session ) {
             return()
         }
 
-        with( p, uiMessage( Reg1, Reg2, Reg3, What, Day, Count ) )
+        with( p, uiMessage( Reg1, Reg2, Reg3, Type, What, Day, Count ) )
 
         if( is.null( sessionData$buildModel ) ) {
             return()
@@ -412,7 +448,8 @@ server <- function( input, output, session ) {
         if( sessionData$buildModel$Reg1 != p$Reg1 |
             sessionData$buildModel$Reg2 != p$Reg2 |
             sessionData$buildModel$Reg3 != p$Reg3 |
-            sessionData$buildModel$What != p$What ) {
+            sessionData$buildModel$What != p$What |
+            sessionData$buildModel$Type != p$Type ) {
             return()
         }
         
@@ -464,7 +501,11 @@ server <- function( input, output, session ) {
         ## find yLim
         yLim <- range( sessionData$plots$Count )
         ## leave room for model overshoot
-        yLim[2] <- 2*yLim[2]
+        if( input$checkboxScale==TRUE ) {
+            yLim[2] <- 2 * yLim[2]
+        } else {
+            yLim[2] < 1.25 * yLim[2]
+        }
         
         ## set logscale
         if( input$checkboxScale ) {
@@ -494,9 +535,10 @@ server <- function( input, output, session ) {
         ## add data
         i <- 1
         for( id in plotNames ) {
-            dt <- sessionData$plots[ Id==id ]
+            dt <- sessionData$plots[ Id==id ][ order(Day) ]
+            lines( dt$Day, dt$Count, lty=1, lwd=0.75, col=adjustcolor(i,alpha=0.5) )
             points( dt$Day, dt$Count, pch=16, col=i )
-            lg.this <- paste( dt$What[1], dt$Reg1[1] )
+            lg.this <- paste( dt$Reg1[1], dt$Type[1], dt$What[1] )
             if( dt$Reg2[1] != "All" ) {
                 lg.this <- paste(
                     lg.this, dt$Reg2[1], sep="/"
@@ -573,6 +615,8 @@ server <- function( input, output, session ) {
                 reg2,
                 reg3,
                 fit$dt$What[1],
+                " ",
+                fit$dt$Type[1],
                 " ",
                 format( min( pp$Day ), "%m-%d" ),
                 "/",
