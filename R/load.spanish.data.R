@@ -2,7 +2,7 @@ load.spanish.data <- function() {
     sp.names <- c(
         casos="Confirmed Cases",
         fallecidos="Fatalities",
-        uci="ICU admissions"
+        uci="In ICU"
     )
     
     sp <- NULL
