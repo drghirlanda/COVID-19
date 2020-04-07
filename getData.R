@@ -41,6 +41,15 @@ days <- sp[ Reg2=="All", Day ]
 covid <- covid[ ! (Reg1=="Spain" & Day %in% days) ]
 covid <- rbind( covid, sp )
 
+## merge swedish ICU data. these are daily admissions without discharges.
+message( "loading Swedish ICU data" )
+se <- try( load.swedish.icu.admissions() )
+if( class(se) == "try-error" ) {
+    se <- fread( "covid_swedish_icu_admissions.csv" )
+    se$Day <- as.Date( se$Day )
+}
+covid <- rbind( covid, se )
+
 ## save a sorted data.table so that we don't have to sort in app
 message( "sorting data" )
 covid[

@@ -319,7 +319,7 @@ server <- function( input, output, session ) {
 
         ## add data type (Total or Daily)
         my.data$Type <- t
-        
+
         ## plot day-to-day differences?
         if( t == "Daily" ) {
                 my.data[
@@ -682,7 +682,7 @@ server <- function( input, output, session ) {
         }
     )
     output$appInfo <- renderUI({
-        HTML("This tool is provided to the public as is, without any implied fitness for any purpose; it may provide inaccurate information. DataWorks LLC is not liable for any damage that may derive from its use. Data sources: <a href=\"https://github.com/pcm-dpc/COVID-19\">Italian Government</a>, <a href=\"https://github.com/opencovid19-fr\">French Government</a>, <a href=\"https://github.com/datadista/datasets/tree/master/COVID%2019\">Spanish Authorities</a>, <a href=\"https://github.com/nytimes/covid-19-data\">The New York Times</a> (US), <a href=\"https://data.humdata.org/dataset/novel-coronavirus-2019-ncov-cases\">Human Data Exchange</a> (others). &copy;&nbsp;<a href=\"https://dataworks.consulting\">DataWorks LLC</a> 2020.")
+        HTML("This tool is provided to the public as is, without any implied fitness for any purpose; it may provide inaccurate information. DataWorks LLC is not liable for any damage that may derive from its use. Data sources: <a href=\"https://github.com/pcm-dpc/COVID-19\">Italian Government</a>, <a href=\"https://github.com/opencovid19-fr\">French Government</a>, <a href=\"https://portal.icuregswe.org/siri/report/vtfstart-corona\">Swedish Government</a>, <a href=\"https://github.com/datadista/datasets/tree/master/COVID%2019\">Spanish Authorities</a>, <a href=\"https://github.com/nytimes/covid-19-data\">The New York Times</a> (US), <a href=\"https://data.humdata.org/dataset/novel-coronavirus-2019-ncov-cases\">Human Data Exchange</a> (others). &copy;&nbsp;<a href=\"https://dataworks.consulting\">DataWorks LLC</a> 2020.")
     })
 
     
