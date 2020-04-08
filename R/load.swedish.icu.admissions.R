@@ -8,6 +8,10 @@ load.swedish.icu.admissions <- function() {
 
     require(RSelenium)
 
+    ## launch a virtual X server and set DISPLAY for firefox
+    xpid <- system("eval 'echo $$; Xvfb :1'", wait=FALSE )
+    Sys.setenv( DISPLAY=":1" )
+    
     ## store the downloaded file here:
     download.dir <- "~/Downloads/"
 
@@ -58,7 +62,8 @@ load.swedish.icu.admissions <- function() {
     message( "closing firefox" )
     d$client$close()
     d$server$stop()
-
+    system(paste("kill",xpid))
+    
     require(data.table)
     require(readxl)
 
