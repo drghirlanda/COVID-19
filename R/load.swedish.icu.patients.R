@@ -1,4 +1,4 @@
-load.swedish.icu.admissions <- function() {
+load.swedish.icu.patients <- function() {
 
     ## this function opens a firefox browser and uses web automation
     ## provided by RSelenium to open the appropriate web page and
@@ -9,7 +9,7 @@ load.swedish.icu.admissions <- function() {
     require(RSelenium)
 
     ## launch a virtual X server and set DISPLAY for firefox
-    xpid <- system("eval 'echo $$; Xvfb :1'", wait=FALSE )
+    xpid <- system("eval 'echo $$; Xvfb :1 &'", intern=TRUE )
     Sys.setenv( DISPLAY=":1" )
     
     ## store the downloaded file here:
@@ -36,7 +36,7 @@ load.swedish.icu.admissions <- function() {
 
     ## navigate to the page
     message( "opening page" )
-    d$client$navigate( "https://portal.icuregswe.org/siri/report/vtfstart-corona" )
+    d$client$navigate( "https://portal.icuregswe.org/siri/report/corona.covid-dagligen" )
 
     ## find the "Detaljer" element and click on it to switch to table
     ## view and create a download button
@@ -70,7 +70,7 @@ load.swedish.icu.admissions <- function() {
     ## the file name changes by day, but it matches this pattern:
     se.files <- list.files(
         download.dir,
-        "Antal nyinskrivna v*",
+        "Antal intensiv*",
         full.names=TRUE
     )
     message( "found these files: " )
@@ -83,14 +83,14 @@ load.swedish.icu.admissions <- function() {
     se.xlsx <- read_xlsx( se.file )
     n <- nrow(se.xlsx)
 
-    se <- as.data.table( se.xlsx[ 2:n, c(1,3) ] )
-    setnames( se, c("Datum","...3"), c("Day","Count") )
+    se <- as.data.table( se.xlsx[ 2:n, c(1,2) ] )
+    setnames( se, c("Datum","...2"), c("Day","Count") )
     se$Day <- as.Date( se$Day )
     se$Count <- cumsum( se$Count )
     se$Reg1 <- "Sweden"
     se$Reg2 <- "All"
     se$Reg3 <- "All"
-    se$What <- "ICU Admissions"
+    se$What <- "In ICU"
     setorder( se, Day )
     
     ## remove files. we shamelessly bet there is nothing else starting
@@ -99,7 +99,7 @@ load.swedish.icu.admissions <- function() {
 
     ## we also write out the data so that we have a cached copy in
     ## case getData.R is called non-interactively
-    fwrite( se, "covid_swedish_icu_admissions.csv" )
+    fwrite( se, "covid_swedish_icu_patients.csv" )
 
     se
 }

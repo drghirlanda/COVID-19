@@ -43,9 +43,9 @@ covid <- rbind( covid, sp )
 
 ## merge swedish ICU data. these are daily admissions without discharges.
 message( "loading Swedish ICU data" )
-se <- try( load.swedish.icu.admissions() )
+se <- try( load.swedish.icu.patients() )
 if( class(se) == "try-error" ) {
-    se <- fread( "covid_swedish_icu_admissions.csv" )
+    se <- fread( "covid_swedish_icu_patients.csv" )
     se$Day <- as.Date( se$Day )
 }
 covid <- rbind( covid, se )
